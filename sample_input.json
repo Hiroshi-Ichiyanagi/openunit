@@ -1,0 +1,22 @@
+{
+  "method": "openunit",
+  "method_version": "v0",
+  "disclaimer": "ILLUSTRATIVE_SAMPLE_NOT_AUTHORITATIVE",
+  "note": "Populations and FX rates below are rounded, made-up demonstration values chosen only to exercise the mechanism. They are NOT real-world data and MUST NOT be used as an authoritative openunit value.",
+  "numeraire": "USD",
+  "weight_vintage": {
+    "label": "ILLUSTRATIVE-v0-pin",
+    "basis": "population_share",
+    "frequency": "low (annual / 5-year); value uses daily FX",
+    "note": "SDR-style fixed basket -- the population version. Quantities are pinned here; value is read from daily FX."
+  },
+  "rounding": {"precision": 50, "mode": "ROUND_HALF_EVEN", "display_dp": 6},
+  "basket": [
+    {"code": "INR", "name": "India",          "population": "300000000", "fx_baseline_usd_per_unit": "0.012",   "fx_valuation_usd_per_unit": "0.01162"},
+    {"code": "CNY", "name": "China",          "population": "295000000", "fx_baseline_usd_per_unit": "0.14",    "fx_valuation_usd_per_unit": "0.138"},
+    {"code": "USD", "name": "United States",  "population": "150000000", "fx_baseline_usd_per_unit": "1.0",     "fx_valuation_usd_per_unit": "1.0"},
+    {"code": "EUR", "name": "Euro area",      "population": "140000000", "fx_baseline_usd_per_unit": "1.08",    "fx_valuation_usd_per_unit": "1.06"},
+    {"code": "JPY", "name": "Japan",          "population": "70000000",  "fx_baseline_usd_per_unit": "0.0067",  "fx_valuation_usd_per_unit": "0.0066"},
+    {"code": "GBP", "name": "United Kingdom", "population": "45000000",  "fx_baseline_usd_per_unit": "1.27",    "fx_valuation_usd_per_unit": "1.25"}
+  ]
+}

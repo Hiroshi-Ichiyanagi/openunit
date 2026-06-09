@@ -1,0 +1,15 @@
+openunit
+Copyright 2026 Hiroshi Ichiyanagi
+
+This product includes software developed for the openunit project.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License in the accompanying LICENSE file or at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+openunit is a measuring stick, not money: it issues no currency, holds no
+reserves, and settles no payments. Data vintages bundled under data/ carry their
+own provenance and disclaimers in each vintage's SOURCES.md. Inputs labelled
+ILLUSTRATIVE are not authoritative.

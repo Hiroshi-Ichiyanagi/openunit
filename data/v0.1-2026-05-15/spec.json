@@ -1,0 +1,88 @@
+{
+  "method": "openunit",
+  "method_version": "v0.1",
+  "numeraire": "USD",
+  "weight_vintage": {
+    "label": "UN-WPP-2024",
+    "basis": "population_share",
+    "frequency": "low (annual); value uses ECB daily reference FX",
+    "note": "SDR-style fixed basket, population version. Quantities are pinned from UN population shares; value is read from ECB euro reference rates."
+  },
+  "rounding": {
+    "precision": 50,
+    "mode": "ROUND_HALF_EVEN",
+    "display_dp": 6
+  },
+  "provenance": {
+    "population": {
+      "source": "United Nations, World Population Prospects 2024 Revision (medium variant), 2026 estimate",
+      "via": "https://www.worldometers.info/world-population/population-by-country/",
+      "retrieved": "2026-06-08",
+      "euro_area_definition": "sum of the 20 euro-area member states"
+    },
+    "fx": {
+      "source": "European Central Bank, euro foreign exchange reference rates (units of currency per 1 EUR)",
+      "baseline_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml",
+      "valuation_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+      "baseline_date": "2026-01-09",
+      "valuation_date": "2026-05-15",
+      "conversion": "usd_per_unit(C) = (USD per EUR) / (C per EUR); USD=1; EUR=(USD per EUR)"
+    }
+  },
+  "basket": [
+    {
+      "code": "USD",
+      "name": "United States",
+      "population": "349035494",
+      "fx_baseline_usd_per_unit": "1",
+      "fx_valuation_usd_per_unit": "1",
+      "source_eur_per_unit_baseline": "1.1642",
+      "source_eur_per_unit_valuation": "1.1628"
+    },
+    {
+      "code": "EUR",
+      "name": "Euro area",
+      "population": "347740855",
+      "fx_baseline_usd_per_unit": "1.1642",
+      "fx_valuation_usd_per_unit": "1.1628",
+      "source_eur_per_unit_baseline": "1",
+      "source_eur_per_unit_valuation": "1"
+    },
+    {
+      "code": "CNY",
+      "name": "China",
+      "population": "1412914089",
+      "fx_baseline_usd_per_unit": "0.14321917134140340517665584096053538037594724928649",
+      "fx_valuation_usd_per_unit": "0.14682930525039775740586408061216758845367073263126",
+      "source_eur_per_unit_baseline": "8.1288",
+      "source_eur_per_unit_valuation": "7.9194"
+    },
+    {
+      "code": "JPY",
+      "name": "Japan",
+      "population": "122427731",
+      "fx_baseline_usd_per_unit": "0.0063437227550130775937227550130775937227550130775937",
+      "fx_valuation_usd_per_unit": "0.0063072249945758298980256020828813191581688001735734",
+      "source_eur_per_unit_baseline": "183.52",
+      "source_eur_per_unit_valuation": "184.36"
+    },
+    {
+      "code": "GBP",
+      "name": "United Kingdom",
+      "population": "69931528",
+      "fx_baseline_usd_per_unit": "1.3417079635818831393338711536245246052783220006915",
+      "fx_valuation_usd_per_unit": "1.3357840321654221711659965537047673750717978173464",
+      "source_eur_per_unit_baseline": "0.8677",
+      "source_eur_per_unit_valuation": "0.87050"
+    },
+    {
+      "code": "INR",
+      "name": "India",
+      "population": "1476625576",
+      "fx_baseline_usd_per_unit": "0.011084082697425107227694021431257646369967676979249",
+      "fx_valuation_usd_per_unit": "0.010419915049196193343728157427818699930103769019840",
+      "source_eur_per_unit_baseline": "105.0335",
+      "source_eur_per_unit_valuation": "111.5940"
+    }
+  ]
+}

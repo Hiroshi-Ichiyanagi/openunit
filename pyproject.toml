@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openunit"
+version = "0.2.0"
+description = "A deterministic, publicly verifiable, population-weighted unit of account."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Hiroshi Ichiyanagi" }]
+keywords = ["unit-of-account", "deterministic", "reproducible", "SDR", "index", "verifiable"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering",
+]
+# No runtime dependencies on purpose: standard library only.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/Hiroshi-Ichiyanagi/openunit"
+Repository = "https://github.com/Hiroshi-Ichiyanagi/openunit"
+Issues = "https://github.com/Hiroshi-Ichiyanagi/openunit/issues"
+
+[project.scripts]
+openunit = "cli:main"
+
+[tool.setuptools]
+# Flat single-file modules at the repository root (not a package directory),
+# which keeps the verify command backward compatible.
+py-modules = ["openunit", "cli", "anchor"]
+
+[tool.pytest.ini_options]
+addopts = "-q"

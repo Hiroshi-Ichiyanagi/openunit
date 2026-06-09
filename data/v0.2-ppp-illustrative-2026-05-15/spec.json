@@ -1,0 +1,90 @@
+{
+  "method": "openunit",
+  "method_version": "v0.2",
+  "numeraire": "USD",
+  "weight_vintage": {
+    "label": "UN-WPP-2024 + PPP(illustrative)",
+    "basis": "population_share",
+    "frequency": "low; baseline=nominal FX, valuation=PPP (international $)",
+    "note": "One person, one vote (population weights). The baseline leg is nominal market FX; the valuation leg is PPP, so the unit is read in international dollars. realized_weight_at_valuation shows how real purchasing power redistributes effective weight toward lower-price economies."
+  },
+  "rounding": {
+    "precision": 50,
+    "mode": "ROUND_HALF_EVEN",
+    "display_dp": 6
+  },
+  "disclaimer": "PPP_FACTORS_ILLUSTRATIVE_NOT_AUTHORITATIVE",
+  "provenance": {
+    "population": {
+      "source": "United Nations, World Population Prospects 2024 Revision (medium variant), 2026 estimate",
+      "via": "https://www.worldometers.info/world-population/population-by-country/",
+      "retrieved": "2026-06-08"
+    },
+    "nominal_fx": {
+      "source": "ECB euro reference rates",
+      "date": "2026-05-15",
+      "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+    },
+    "ppp": {
+      "intended_source": "World Bank, PPP conversion factor, GDP (LCU per international $), indicator PA.NUS.PPP",
+      "url": "https://data.worldbank.org/indicator/PA.NUS.PPP",
+      "status": "ILLUSTRATIVE placeholders; replace with verified World Bank values before any non-demonstration use"
+    }
+  },
+  "basket": [
+    {
+      "code": "USD",
+      "name": "United States",
+      "population": "349035494",
+      "fx_baseline_usd_per_unit": "1",
+      "fx_valuation_usd_per_unit": "1",
+      "ppp_factor_lcu_per_intl_usd": "1.0",
+      "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE"
+    },
+    {
+      "code": "EUR",
+      "name": "Euro area",
+      "population": "347740855",
+      "fx_baseline_usd_per_unit": "1.1628",
+      "fx_valuation_usd_per_unit": "1.3698630136986301369863013698630136986301369863014",
+      "ppp_factor_lcu_per_intl_usd": "0.73",
+      "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE"
+    },
+    {
+      "code": "CNY",
+      "name": "China",
+      "population": "1412914089",
+      "fx_baseline_usd_per_unit": "0.14682930525039775740586408061216758845367073263126",
+      "fx_valuation_usd_per_unit": "0.23809523809523809523809523809523809523809523809524",
+      "ppp_factor_lcu_per_intl_usd": "4.2",
+      "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE"
+    },
+    {
+      "code": "JPY",
+      "name": "Japan",
+      "population": "122427731",
+      "fx_baseline_usd_per_unit": "0.0063072249945758298980256020828813191581688001735734",
+      "fx_valuation_usd_per_unit": "0.010526315789473684210526315789473684210526315789474",
+      "ppp_factor_lcu_per_intl_usd": "95.0",
+      "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE"
+    },
+    {
+      "code": "GBP",
+      "name": "United Kingdom",
+      "population": "69931528",
+      "fx_baseline_usd_per_unit": "1.3357840321654221711659965537047673750717978173464",
+      "fx_valuation_usd_per_unit": "1.4285714285714285714285714285714285714285714285714",
+      "ppp_factor_lcu_per_intl_usd": "0.70",
+      "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE"
+    },
+    {
+      "code": "INR",
+      "name": "India",
+      "population": "1476625576",
+      "fx_baseline_usd_per_unit": "0.010419915049196193343728157427818699930103769019840",
+      "fx_valuation_usd_per_unit": "0.042553191489361702127659574468085106382978723404255",
+      "ppp_factor_lcu_per_intl_usd": "23.5",
+      "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE"
+    }
+  ]
+}

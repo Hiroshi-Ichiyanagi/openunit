@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Determinism guard (standalone, no dependencies)
+        run: python3 test_determinism_guard.py
+
+      - name: Vintages reproduce byte-for-byte
+        run: python3 make_vintages.py --verify
+
+      - name: Standalone test suites (no pytest)
+        run: |
+          python3 test_vintages.py
+          python3 test_ppp.py
+          python3 test_cli.py
+          python3 test_anchor.py
+
+      - name: Install dev extras and run pytest
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e ".[dev]"
+          python3 -m pytest -q
+
+      - name: Demo (sanity)
+        run: python3 openunit.py
