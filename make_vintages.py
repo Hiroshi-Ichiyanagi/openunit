@@ -18,9 +18,11 @@ Re-running is deterministic: identical bytes, identical hashes.
 
 NOTE on honesty:
   - v0.1 uses REAL data (ECB euro reference rates + UN WPP 2024 population).
-  - v0.2 demonstrates the PPP MECHANISM but its PPP factors are ILLUSTRATIVE
-    (clearly labelled). The procedure to drop in verified World Bank PA.NUS.PPP
-    values is documented in data/<v0.2 id>/SOURCES.md and in SPEC.md section 7.
+  - v0.2 uses REAL data too: World Bank PA.NUS.PPP (ICP, year PPP_YEAR) for
+    USD/CNY/JPY/GBP/INR. The World Bank publishes no single Euro-area PA.NUS.PPP
+    value, so the euro-area factor is a population-weighted blend of the 20
+    euro-area members' WB values -- a contestable choice (SPEC.md section 10)
+    documented in the vintage's SOURCES.md.
 """
 
 import os
@@ -80,16 +82,37 @@ EURO_AREA_MEMBERS = [
     ("Slovakia", "5451342"), ("Finland", "5621739"),
 ]
 
-# ILLUSTRATIVE PPP conversion factors (LCU per international $), GDP basis.
-# *** NOT authoritative -- order-of-magnitude placeholders to exercise v0.2. ***
-# Replace with verified World Bank PA.NUS.PPP values (see SOURCES.md procedure).
-PPP_ILLUSTRATIVE = {
-    "USD": "1.0",      # base currency of the international dollar (exact)
-    "EUR": "0.73",     # euro-area approximation (illustrative)
-    "CNY": "4.2",      # illustrative
-    "JPY": "95.0",     # illustrative
-    "GBP": "0.70",     # illustrative
-    "INR": "23.5",     # illustrative
+# PPP reference year (World Bank PA.NUS.PPP / ICP round).
+PPP_YEAR = "2024"
+
+# World Bank PA.NUS.PPP -- PPP conversion factor, GDP (LCU per international $),
+# ICP, reference year 2024 -- transcribed exactly as published (full digits).
+#   https://data.worldbank.org/indicator/PA.NUS.PPP   (CC BY-4.0)
+# EUR is filled in below from euro_area_ppp(): the World Bank publishes NO single
+# Euro-area PA.NUS.PPP value, so the euro-area factor is a population-weighted
+# blend of the 20 euro-area members' WB values (see euro_area_ppp / SOURCES.md).
+PPP_WB = {
+    "USD": "1.0",                 # international-dollar base (exact, = 1)
+    "CNY": "3.5325492491585",     # China
+    "JPY": "94.462599",           # Japan
+    "GBP": "0.664153",            # United Kingdom
+    "INR": "20.4219876045922",    # India
+    # "EUR": filled below = population-weighted blend of euro-area members
+}
+
+# Per-member World Bank PA.NUS.PPP (year 2024, EUR per international $),
+# transcribed exactly as published. Member populations come from
+# EURO_AREA_MEMBERS above (UN WPP 2024) -- the same basis as the v0.1 euro-area
+# headcount -- so the blend uses one consistent population source.
+EURO_PPP_2024 = {
+    "Germany": "0.700862", "France": "0.681239", "Italy": "0.599627",
+    "Spain": "0.562107", "Netherlands": "0.731421", "Belgium": "0.704288",
+    "Greece": "0.515086", "Portugal": "0.515993", "Austria": "0.710451",
+    "Ireland": "0.740894", "Croatia": "0.44841971235566",
+    "Lithuania": "0.49104", "Slovenia": "0.550461", "Latvia": "0.496528",
+    "Estonia": "0.576166", "Cyprus": "0.56709589608174",
+    "Luxembourg": "0.815579", "Malta": "0.580522225637102",
+    "Slovakia": "0.501903", "Finland": "0.753945",
 }
 
 CCY_NAME = {"USD": "United States", "EUR": "Euro area", "CNY": "China",
@@ -110,6 +133,29 @@ def euro_area_total():
         ctx.prec = PREC
         ctx.rounding = ROUND
         return sum((Decimal(p) for _, p in EURO_AREA_MEMBERS), Decimal(0))
+
+
+def euro_area_ppp():
+    """Euro-area PA.NUS.PPP as a population-weighted blend of the 20 member
+    states:  Sum(pop_i * ppp_i) / Sum(pop_i).
+
+    The World Bank publishes no single Euro-area PA.NUS.PPP value, so we blend
+    the members' published values weighted by UN WPP 2024 population. Weighting
+    by people (rather than GDP) follows openunit's one-person-one-vote stance and
+    is a contestable choice, documented as such (SPEC sec 10 / SOURCES.md).
+    """
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        num = sum((Decimal(p) * Decimal(EURO_PPP_2024[name])
+                   for name, p in EURO_AREA_MEMBERS), Decimal(0))
+        den = sum((Decimal(p) for _, p in EURO_AREA_MEMBERS), Decimal(0))
+        return num / den
+
+
+# Fill EUR from the population-weighted member blend (full precision; the member
+# table and formula in SOURCES.md let anyone recompute this exact value).
+PPP_WB["EUR"] = str(euro_area_ppp())
 
 
 def usd_per_unit(ccy, leg):
@@ -270,7 +316,8 @@ def sources_v0_1(spec, art, ea_pop):
 
 # ---------------------------------------------------------------------------
 # v0.2  -- PPP-aware: UN population weights, value read in PPP (international $)
-#          (PPP factors are ILLUSTRATIVE -- see note above)
+#          (REAL World Bank PA.NUS.PPP; euro area = population-weighted member
+#           blend -- see PPP_WB / euro_area_ppp above)
 # ---------------------------------------------------------------------------
 def build_v0_2(persist=True):
     ea_pop = euro_area_total()
@@ -285,15 +332,15 @@ def build_v0_2(persist=True):
         with localcontext() as ctx:
             ctx.prec = PREC
             ctx.rounding = ROUND
-            ppp_rate = Decimal(1) / Decimal(PPP_ILLUSTRATIVE[c])
+            ppp_rate = Decimal(1) / Decimal(PPP_WB[c])
         basket.append({
             "code": c,
             "name": CCY_NAME[c],
             "population": pop_for[c],
             "fx_baseline_usd_per_unit": str(nominal),
             "fx_valuation_usd_per_unit": str(ppp_rate),
-            "ppp_factor_lcu_per_intl_usd": PPP_ILLUSTRATIVE[c],
-            "ppp_status": "ILLUSTRATIVE_NOT_AUTHORITATIVE",
+            "ppp_factor_lcu_per_intl_usd": PPP_WB[c],
+            "ppp_status": "World Bank PA.NUS.PPP (ICP) " + PPP_YEAR,
         })
 
     spec = {
@@ -301,7 +348,7 @@ def build_v0_2(persist=True):
         "method_version": "v0.2",
         "numeraire": "USD",
         "weight_vintage": {
-            "label": "UN-WPP-2024 + PPP(illustrative)",
+            "label": "UN-WPP-2024 + WB-PPP-" + PPP_YEAR,
             "basis": "population_share",
             "frequency": "low; baseline=nominal FX, valuation=PPP (international $)",
             "note": ("One person, one vote (population weights). The baseline leg "
@@ -311,7 +358,6 @@ def build_v0_2(persist=True):
                      "weight toward lower-price economies."),
         },
         "rounding": {"precision": PREC, "mode": "ROUND_HALF_EVEN", "display_dp": 6},
-        "disclaimer": "PPP_FACTORS_ILLUSTRATIVE_NOT_AUTHORITATIVE",
         "provenance": {
             "population": {
                 "source": "United Nations, World Population Prospects 2024 "
@@ -327,12 +373,20 @@ def build_v0_2(persist=True):
                        "eurofxref-daily.xml",
             },
             "ppp": {
-                "intended_source": "World Bank, PPP conversion factor, GDP "
-                                    "(LCU per international $), indicator "
-                                    "PA.NUS.PPP",
+                "source": "World Bank, PPP conversion factor, GDP "
+                          "(LCU per international $), indicator PA.NUS.PPP (ICP)",
                 "url": "https://data.worldbank.org/indicator/PA.NUS.PPP",
-                "status": "ILLUSTRATIVE placeholders; replace with verified "
-                          "World Bank values before any non-demonstration use",
+                "year": PPP_YEAR,
+                "license": "CC BY-4.0",
+                "euro_area_method": (
+                    "The World Bank publishes no single Euro-area PA.NUS.PPP "
+                    "value, so the euro-area factor is a population-weighted "
+                    "blend of the 20 member states' WB PA.NUS.PPP: "
+                    "sum(pop_i * ppp_i) / sum(pop_i), with member populations "
+                    "from UN WPP 2024 (same basis as the euro-area headcount). "
+                    "Weighting by people rather than GDP follows openunit's "
+                    "one-person-one-vote stance and is a contestable choice "
+                    "(SPEC sec 10)."),
             },
         },
         "basket": basket,
@@ -340,7 +394,7 @@ def build_v0_2(persist=True):
     art = openunit.build_artifact(spec)
     assert openunit.verify_artifact(art, spec), "v0.2 failed self-verification"
 
-    vid = "v0.2-ppp-illustrative-%s" % ECB["valuation"]["date"]
+    vid = "v0.2-ppp-%s" % ECB["valuation"]["date"]
     sources = sources_v0_2(spec, art)
     if persist:
         d = os.path.join(DATA, vid)
@@ -351,46 +405,86 @@ def build_v0_2(persist=True):
 
 
 def sources_v0_2(spec, art):
+    euro = euro_area_ppp()
+    ea_pop = euro_area_total()
     lines = []
     lines.append("# openunit vintage `%s` -- sources & provenance\n" % (
-        "v0.2-ppp-illustrative-" + ECB["valuation"]["date"]))
-    lines.append("**Status: MECHANISM REAL, PPP DATA ILLUSTRATIVE.**\n")
-    lines.append("Population (UN WPP 2024) and the nominal-FX baseline (ECB) are "
-                 "real. The **PPP factors are placeholders** chosen only to "
-                 "exercise the v0.2 mechanism end to end. They are **not** World "
-                 "Bank values and must not be used as an authoritative figure.\n")
+        "v0.2-ppp-" + ECB["valuation"]["date"]))
+    lines.append("**Status: REAL DATA.** Population (UN WPP 2024), the nominal-FX "
+                 "baseline (ECB), and the PPP valuation leg (World Bank "
+                 "`PA.NUS.PPP`, ICP %s) are all transcribed from named public "
+                 "sources. Re-running `make_vintages.py` reproduces `spec.json` "
+                 "and `artifact.json` byte for byte.\n" % PPP_YEAR)
     lines.append("- `input_digest`  : `%s`" % art["input_digest"])
     lines.append("- `artifact_hash` : `%s`\n" % art["artifact_hash"])
 
-    lines.append("## PPP factors used (ILLUSTRATIVE)\n")
-    lines.append("PPP conversion factor = local-currency units per international $; "
-                 "PPP rate = `1 / factor` (international $ per unit), used as the "
-                 "valuation leg.\n")
-    lines.append("| currency | PPP factor (illustrative) | status |")
+    lines.append("## PPP conversion factors (World Bank `PA.NUS.PPP`, ICP %s)\n"
+                 % PPP_YEAR)
+    lines.append("PPP conversion factor = local-currency units per international $ "
+                 "(GDP basis); the valuation leg is `PPP rate = 1 / factor` "
+                 "(international $ per unit). Values are transcribed exactly as "
+                 "published.\n")
+    lines.append("- source: World Bank, *PPP conversion factor, GDP "
+                 "(LCU per international $)*, indicator `PA.NUS.PPP` (ICP)")
+    lines.append("- url: <https://data.worldbank.org/indicator/PA.NUS.PPP>")
+    lines.append("- reference year: **%s**  |  license: **CC BY-4.0**\n" % PPP_YEAR)
+    lines.append("| currency | economy | PA.NUS.PPP (%s) |" % PPP_YEAR)
     lines.append("|---|---|---|")
     for c in BASKET:
-        lines.append("| %s | %s | ILLUSTRATIVE |" % (c, PPP_ILLUSTRATIVE[c]))
+        if c == "EUR":
+            lines.append("| EUR | Euro area | %s *(population-weighted member "
+                         "blend, see below)* |" % PPP_WB["EUR"])
+        else:
+            lines.append("| %s | %s | %s |" % (c, CCY_NAME[c], PPP_WB[c]))
     lines.append("")
+    lines.append("(USD = 1.0 is the international-dollar base by definition.)\n")
 
-    lines.append("## Procedure to make this vintage REAL\n")
-    lines.append("1. Open the World Bank series PA.NUS.PPP "
-                 "(PPP conversion factor, GDP, LCU per international $): "
-                 "<https://data.worldbank.org/indicator/PA.NUS.PPP>.")
-    lines.append("2. For each currency, read the most recent year's value "
-                 "(US = 1.0 by definition). For the euro area, choose and "
-                 "document an aggregation rule (e.g. a GDP-weighted blend of "
-                 "member states, or Eurostat's euro-area price level), because "
-                 "the World Bank does not publish a single euro-area PPP factor.")
-    lines.append("3. Replace the entries in `PPP_ILLUSTRATIVE` in "
-                 "`make_vintages.py`, set `ppp_status` to the source/year, and "
-                 "re-run `python3 make_vintages.py`.")
-    lines.append("4. The new `spec.json` / `artifact.json` hashes will change "
-                 "(new inputs) and the vintage id should be renamed to drop "
-                 "`illustrative`.\n")
-    lines.append("Why the euro area needs a rule: the euro area spans countries "
-                 "with materially different price levels, so there is no unique "
-                 "'euro-area PPP'. openunit's stance is to make that choice "
-                 "explicit rather than hide it (see SPEC.md section 8).\n")
+    lines.append("## Euro area: population-weighted member blend\n")
+    lines.append("The World Bank publishes **no single Euro-area `PA.NUS.PPP` "
+                 "value** (the `EMU` aggregate row is empty in both the bulk CSV "
+                 "and the API). openunit therefore derives the euro-area factor as "
+                 "a **population-weighted blend** of the 20 euro-area members:\n")
+    lines.append("```\n"
+                 "ppp(euro area) = sum(pop_i * ppp_i) / sum(pop_i)\n"
+                 "```\n")
+    lines.append("Member populations are the UN WPP 2024 figures used for the "
+                 "euro-area headcount (one consistent population source); each "
+                 "member's `PA.NUS.PPP` is the World Bank %s value.\n" % PPP_YEAR)
+    lines.append("| member | population (UN WPP 2024) | PA.NUS.PPP (%s) |"
+                 % PPP_YEAR)
+    lines.append("|---|---|---|")
+    for name, p in EURO_AREA_MEMBERS:
+        lines.append("| %s | %s | %s |" % (name, p, EURO_PPP_2024[name]))
+    lines.append("| **euro area (blend)** | **%s** | **%s** |" % (ea_pop, euro))
+    lines.append("")
+    lines.append("Weighting the blend by **people** (rather than by GDP) follows "
+                 "openunit's one-person-one-vote stance. It is deliberately a "
+                 "**value choice, not a neutral fact**, and is therefore a "
+                 "**contestable** input -- exactly the kind of choice openunit "
+                 "makes explicit and auditable rather than hiding (see SPEC.md "
+                 "section 10). A GDP-weighted blend would yield a different "
+                 "euro-area factor; the population-weighted figure is the one "
+                 "pinned here, on the record.\n")
+
+    lines.append("## How to verify\n")
+    lines.append("```\npython3 make_vintages.py            # regenerate\n"
+                 "python3 cli.py verify data/%s/artifact.json data/%s/spec.json\n```\n"
+                 % ("v0.2-ppp-" + ECB["valuation"]["date"],
+                    "v0.2-ppp-" + ECB["valuation"]["date"]))
+
+    lines.append("## Updating to a future ICP / PPP year\n")
+    lines.append("1. Open `PA.NUS.PPP` "
+                 "(<https://data.worldbank.org/indicator/PA.NUS.PPP>) and pick the "
+                 "latest year `Y` for which USD/CNY/JPY/GBP/INR and the 20 "
+                 "euro-area members all have values.")
+    lines.append("2. In `make_vintages.py`, set `PPP_YEAR = \"Y\"` and update the "
+                 "transcribed values in `PPP_WB` (USD = `\"1.0\"`) and "
+                 "`EURO_PPP_2024` (full digits as published).")
+    lines.append("3. Re-run `python3 make_vintages.py`. The euro-area factor is "
+                 "recomputed from the member blend automatically; the new "
+                 "`spec.json` / `artifact.json` hashes change (new inputs).")
+    lines.append("4. Update the pinned hashes referenced in `README.md`, "
+                 "`ARTIFACT_FORMAT.md`, and `CHANGELOG.md`.\n")
     return "\n".join(lines)
 
 

@@ -165,12 +165,16 @@ Regenerate or check them with `python3 make_vintages.py [--verify]`.
   each currency is `usd_per_unit(C) = (USD per EUR) / (C per EUR)`. The raw ECB
   rates are reproduced in `SOURCES.md` so the vintage stays verifiable
   independently of the live feed.
-- **`v0.2-ppp-illustrative-2026-05-15` (MECHANISM REAL, PPP DATA ILLUSTRATIVE).**
-  Population weights with a PPP valuation leg (§2.3). Population and the nominal
-  baseline are real; the **PPP factors are placeholders, clearly labelled**, and
-  must be replaced with verified World Bank `PA.NUS.PPP` values before any
-  non-demonstration use. The replacement procedure is in the vintage's
-  `SOURCES.md`.
+- **`v0.2-ppp-2026-05-15` (REAL).** Population weights with a PPP valuation leg
+  (§2.3), read in international dollars. Inputs are real and named: UN WPP 2024,
+  an ECB nominal-FX baseline, and **World Bank `PA.NUS.PPP` (ICP 2024)** for
+  USD/CNY/JPY/GBP/INR (`1 openunit = 2.848010 international dollars`). The World
+  Bank publishes **no single Euro-area `PA.NUS.PPP` value**, so the euro-area
+  factor is a **population-weighted blend** of the 20 member states,
+  `ppp(euro area) = Σ_i pop_i·ppp_i / Σ_i pop_i`, using UN WPP 2024 populations.
+  Weighting the blend by people rather than GDP is a deliberate, **contestable**
+  value choice consistent with §10; the member table, the formula, and the raw
+  World Bank values are reproduced in the vintage's `SOURCES.md`.
 
 ## 7. Anchoring
 
@@ -184,9 +188,10 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
 ## 8. Limitations
 
 - The bundled v0 sample and all illustrative inputs are **non-authoritative**.
-- v0.2's PPP factors are **illustrative** until replaced with verified World
-  Bank values; the euro area has no single published PPP factor and requires a
-  documented aggregation rule.
+- The euro area has **no single published World Bank PPP factor**; v0.2 derives
+  it as a population-weighted blend of the member states. That aggregation is a
+  **contestable value choice** (§10), made explicit in the vintage's
+  `SOURCES.md` rather than hidden — not a World Bank aggregate.
 - The basket is a **subset** of currencies; coverage is a policy choice
   (the bundled basket is the SDR set re-weighted by population, plus India).
 - The engine does **not** fetch FX or population; the caller supplies pinned,
@@ -197,9 +202,8 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
 
 ## 9. Roadmap
 
-- Real, verified **PPP** vintage (World Bank `PA.NUS.PPP`, with a documented
-  euro-area aggregation rule).
-- Additional real pinned vintages over time (rolling baseline/valuation dates).
+- Additional real pinned vintages over time (rolling baseline/valuation dates,
+  and new ICP years for the PPP leg as the World Bank publishes them).
 - A published-artifact **format standard** and a minimal third-party verifier.
 - Optional **public timestamping** recipes for anchors (the core stays offline).
 
@@ -211,3 +215,10 @@ weighting favors large economies; PPP weighting favors welfare comparisons.
 openunit makes the population choice explicit and **contestable**: the method is
 fixed and auditable, so the *politics of the weighting* can be argued in the
 open, on the record, rather than hidden inside an opaque index.
+
+The v0.2 euro-area PPP factor is a concrete instance: because the World Bank
+publishes no single Euro-area `PA.NUS.PPP` value, openunit blends the 20 member
+states **weighted by population** rather than by GDP. That is the same value
+choice applied one level down — recorded in the vintage's `SOURCES.md` with the
+full member table and formula so a GDP-weighted (or any other) alternative can
+be argued against the exact numbers.

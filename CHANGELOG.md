@@ -5,10 +5,20 @@ All notable changes to openunit are documented here. The format follows
 specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
-## [Unreleased]
+## [0.2.1] — 2026-06-09
 
-- Real, verified PPP vintage (World Bank `PA.NUS.PPP`, with a documented
-  euro-area aggregation rule), replacing the illustrative v0.2 factors.
+### Changed
+
+- **The v0.2 PPP vintage now uses real World Bank `PA.NUS.PPP` (ICP 2024)** for
+  USD/CNY/JPY/GBP/INR, replacing the illustrative factors. The World Bank
+  publishes **no single Euro-area `PA.NUS.PPP` value**, so the euro-area factor
+  is a **population-weighted blend** of the 20 member states
+  (`Σ pop_i·ppp_i / Σ pop_i`, UN WPP 2024 populations); that aggregation is
+  documented as a contestable, one-person-one-vote choice (`SPEC.md` §10), not
+  removed. Vintage renamed `v0.2-ppp-illustrative-2026-05-15` →
+  `v0.2-ppp-2026-05-15`; `1 openunit = 2.848010 international dollars`,
+  `artifact_hash sha256:566c95c1…b97a`. The illustrative factors and the
+  "PPP data illustrative" caveat are gone.
 
 ## [0.2.0] — 2026-06-08
 

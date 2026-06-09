@@ -64,18 +64,24 @@ Method v0.1 (one person, one vote) on real, named inputs.
 - population-pinned weights: India 39.08 %, China 37.39 %, United States
   9.24 %, euro area 9.20 %, Japan 3.24 %, United Kingdom 1.85 %
 
-### `v0.2-ppp-illustrative-2026-05-15` — **MECHANISM REAL, PPP DATA ILLUSTRATIVE**
+### `v0.2-ppp-2026-05-15` — **REAL DATA (World Bank `PA.NUS.PPP`, ICP 2024)**
 
-Demonstrates the PPP-aware valuation leg end to end. The PPP factors are
-**placeholders, clearly labelled** — they are *not* World Bank values and must
-not be used as an authoritative figure. The procedure to drop in verified World
-Bank `PA.NUS.PPP` data is documented in the vintage's `SOURCES.md`.
+Method v0.2 (population weights, PPP valuation leg) on real, named inputs: UN
+**World Population Prospects 2024** + an **ECB** nominal-FX baseline + **World
+Bank `PA.NUS.PPP`** (ICP 2024) on the valuation leg, so the unit is read in
+**international dollars**.
 
+- PA.NUS.PPP 2024 for USD/CNY/JPY/GBP/INR, transcribed exactly as published. The
+  World Bank publishes **no single Euro-area** `PA.NUS.PPP` value, so the
+  euro-area factor is a **population-weighted blend** of the 20 members' WB
+  values — a contestable, one-person-one-vote choice (see `SPEC.md` §10 and the
+  vintage's `SOURCES.md`), not a World Bank aggregate.
+- **1 openunit = 2.848010 international dollars**
+- `artifact_hash` `sha256:566c95c1…b97a`
 - reading the unit in international dollars shifts *realized* weight toward
-  lower-price economies: e.g. India moves from a 39.08 % headcount share to a
-  64.43 % realized weight at PPP, while the United States falls from 9.24 % to
-  3.73 %.
-- `artifact_hash` `sha256:37ffa979…034d`
+  lower-price economies: India moves from a 39.08 % headcount share to a
+  64.48 % realized weight at PPP, while the United States falls from 9.24 % to
+  3.24 %.
 
 ## Command-line interface
 
@@ -138,7 +144,7 @@ make_vintages.py            regenerate / --verify the pinned data vintages
 sample_input.json           illustrative v0 spec (non-authoritative)
 data/
   v0.1-2026-05-15/          REAL vintage: spec.json, artifact.json, SOURCES.md
-  v0.2-ppp-illustrative-…/  PPP mechanism demo (illustrative PPP factors)
+  v0.2-ppp-2026-05-15/      REAL PPP vintage: World Bank PA.NUS.PPP (ICP 2024)
 test_determinism_guard.py   4 determinism invariants (standalone + pytest)
 test_vintages.py            backward-compat hash, reproduction, FX integrity
 test_ppp.py                 PPP leg + population×multiplier weighting
@@ -160,5 +166,4 @@ record, rather than hidden inside an opaque index.
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 openunit
-contributors.
+Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 Hiroshi Ichiyanagi.
