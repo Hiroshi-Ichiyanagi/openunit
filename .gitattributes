@@ -1,0 +1,10 @@
+# Enforce LF for all text files so checkouts are byte-for-byte identical on
+# every OS (Windows included). openunit's hashes never depend on file newlines
+# -- they are computed over canonical JSON in memory -- but pinning LF keeps the
+# committed data vintages and `make_vintages.py --verify` reproducible anywhere.
+* text=auto eol=lf
+
+# Explicitly binary (none today, but keep the intent documented).
+*.png binary
+*.jpg binary
+*.zip binary

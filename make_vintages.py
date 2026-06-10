@@ -115,6 +115,26 @@ EURO_PPP_2024 = {
     "Slovakia": "0.501903", "Finland": "0.753945",
 }
 
+# World Bank nominal GDP, NY.GDP.MKTP.CD (current US$), year 2024 -- transcribed
+# exactly as published. Used ONLY to document a GDP-weighted *sensitivity* for
+# the euro-area PPP blend (SPEC sec 10 / the sensitivity table in v0.2
+# SOURCES.md). The SHIPPED euro-area factor stays population-weighted; these
+# values feed no spec, no artifact, and change no hash.
+#   https://data.worldbank.org/indicator/NY.GDP.MKTP.CD   (CC BY-4.0)
+#   retrieved 2026-06-10; World Bank "last updated" 2026-04-08.
+EURO_GDP_2024 = {
+    "Germany": "4685592577804.69", "France": "3160442622465.08",
+    "Italy": "2380825077243.59", "Spain": "1725671652742.19",
+    "Netherlands": "1214927698572.66", "Belgium": "671370081636.406",
+    "Greece": "256238371778.118", "Portugal": "313271185085.102",
+    "Austria": "534790720466.822", "Ireland": "609157459747.205",
+    "Croatia": "92983810328.9088", "Lithuania": "84869215513.3648",
+    "Slovenia": "72972015197.3859", "Latvia": "43684254432.3609",
+    "Estonia": "43130419829.35", "Cyprus": "37634533331.8902",
+    "Luxembourg": "93279851863.4062", "Malta": "24971574502.4475",
+    "Slovakia": "140934076532.375", "Finland": "298696961297.656",
+}
+
 CCY_NAME = {"USD": "United States", "EUR": "Euro area", "CNY": "China",
             "JPY": "Japan", "GBP": "United Kingdom", "INR": "India"}
 
@@ -151,6 +171,54 @@ def euro_area_ppp():
                    for name, p in EURO_AREA_MEMBERS), Decimal(0))
         den = sum((Decimal(p) for _, p in EURO_AREA_MEMBERS), Decimal(0))
         return num / den
+
+
+def euro_area_ppp_gdp_weighted():
+    """GDP-weighted euro-area PA.NUS.PPP, for the SENSITIVITY note only:
+    Sum(gdp_i * ppp_i) / Sum(gdp_i), with member nominal GDP from World Bank
+    NY.GDP.MKTP.CD (2024). This is NOT the shipped factor (the shipped one is
+    the population-weighted blend in euro_area_ppp); it exists so SOURCES.md can
+    state, on the record, what a GDP weighting would yield (SPEC sec 10).
+    """
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        num = sum((Decimal(EURO_GDP_2024[name]) * Decimal(EURO_PPP_2024[name])
+                   for name, _ in EURO_AREA_MEMBERS), Decimal(0))
+        den = sum((Decimal(EURO_GDP_2024[name])
+                   for name, _ in EURO_AREA_MEMBERS), Decimal(0))
+        return num / den
+
+
+def v0_2_value_for_euro_ppp(euro_ppp):
+    """1 openunit in international $ (v0.2) if the euro-area PPP factor were
+    `euro_ppp`. Used only to report the GDP-weighted sensitivity; the value
+    depends solely on the basket numbers, so provenance fields are omitted.
+    Passing euro_area_ppp() reproduces the shipped v0.2 value exactly.
+    """
+    pop_for = dict(POP_FOR_CCY)
+    pop_for["EUR"] = str(euro_area_total())
+    ppp = dict(PPP_WB)
+    ppp["EUR"] = str(euro_ppp)
+    basket = []
+    for c in BASKET:
+        nominal = usd_per_unit(c, "valuation")
+        with localcontext() as ctx:
+            ctx.prec = PREC
+            ctx.rounding = ROUND
+            ppp_rate = Decimal(1) / Decimal(ppp[c])
+        basket.append({
+            "code": c, "name": CCY_NAME[c], "population": pop_for[c],
+            "fx_baseline_usd_per_unit": str(nominal),
+            "fx_valuation_usd_per_unit": str(ppp_rate),
+        })
+    spec = {
+        "method": "openunit", "method_version": "v0.2", "numeraire": "USD",
+        "weight_vintage": {"label": "sensitivity", "basis": "population_share"},
+        "rounding": {"precision": PREC, "mode": "ROUND_HALF_EVEN", "display_dp": 6},
+        "basket": basket,
+    }
+    return Decimal(openunit.build_artifact(spec)["value_usd"])
 
 
 # Fill EUR from the population-weighted member blend (full precision; the member
@@ -465,6 +533,51 @@ def sources_v0_2(spec, art):
                  "section 10). A GDP-weighted blend would yield a different "
                  "euro-area factor; the population-weighted figure is the one "
                  "pinned here, on the record.\n")
+
+    q6 = Decimal("0.000001")
+    euro_gdp = euro_area_ppp_gdp_weighted()
+    val_pop = v0_2_value_for_euro_ppp(euro)
+    val_gdp = v0_2_value_for_euro_ppp(euro_gdp)
+    lines.append("## Sensitivity: GDP-weighted euro-area blend (not shipped)\n")
+    lines.append("The euro-area weighting is a **contestable value choice** "
+                 "(SPEC.md section 10). To make that explicit on the record, here "
+                 "is the GDP-weighted alternative computed from the same member "
+                 "`PA.NUS.PPP` values, weighted by World Bank nominal GDP "
+                 "(`NY.GDP.MKTP.CD`, current US$, 2024) instead of by population:\n")
+    lines.append("```\n"
+                 "ppp(euro area, GDP-weighted) = sum(gdp_i * ppp_i) / sum(gdp_i)\n"
+                 "```\n")
+    lines.append("- GDP source: World Bank, *GDP (current US$)*, indicator "
+                 "`NY.GDP.MKTP.CD` -- <https://data.worldbank.org/indicator/"
+                 "NY.GDP.MKTP.CD> (CC BY-4.0), year **%s**, retrieved 2026-06-10."
+                 % PPP_YEAR)
+    lines.append("")
+    lines.append("| euro-area PPP factor | value | 1 openunit (v0.2) |")
+    lines.append("|---|---|---|")
+    lines.append("| **population-weighted (shipped)** | %s | **%s international $** |"
+                 % (euro.quantize(q6), val_pop.quantize(q6)))
+    lines.append("| GDP-weighted (sensitivity only) | %s | %s international $ |"
+                 % (euro_gdp.quantize(q6), val_gdp.quantize(q6)))
+    lines.append("")
+    lines.append("Full-precision GDP-weighted factor: `%s`.\n" % euro_gdp)
+    lines.append("Per-member nominal GDP used for the GDP-weighted blend "
+                 "(transcribed exactly as published):\n")
+    lines.append("| member | nominal GDP 2024 (current US$) | PA.NUS.PPP (%s) |"
+                 % PPP_YEAR)
+    lines.append("|---|---|---|")
+    for name, _ in EURO_AREA_MEMBERS:
+        lines.append("| %s | %s | %s |"
+                     % (name, EURO_GDP_2024[name], EURO_PPP_2024[name]))
+    lines.append("")
+    lines.append("**openunit ships the population-weighted factor**, consistent "
+                 "with its one-person-one-vote stance (SPEC.md section 10). The "
+                 "GDP-weighted figures above change no shipped spec, artifact, or "
+                 "hash; they are recorded so a GDP weighting can be argued against "
+                 "the exact numbers rather than in the abstract. Here the GDP "
+                 "weighting raises the euro-area PPP factor by about 2.8%%, which "
+                 "moves 1 openunit by about 0.12%% (%s -> %s international $) -- a "
+                 "small but real difference, made in the open.\n"
+                 % (val_pop.quantize(q6), val_gdp.quantize(q6)))
 
     lines.append("## How to verify\n")
     lines.append("```\npython3 make_vintages.py            # regenerate\n"

@@ -222,3 +222,12 @@ states **weighted by population** rather than by GDP. That is the same value
 choice applied one level down — recorded in the vintage's `SOURCES.md` with the
 full member table and formula so a GDP-weighted (or any other) alternative can
 be argued against the exact numbers.
+
+**Sensitivity (on the record).** The two weightings yield:
+population-weighted euro-area `PA.NUS.PPP` `= 0.642950` (**shipped**) vs.
+GDP-weighted `= 0.661121` (World Bank `NY.GDP.MKTP.CD`, 2024). Under each, one
+openunit in the v0.2 vintage is `2.848010` vs. `2.844627` international dollars —
+a ~0.12% difference. openunit ships the **population-weighted** figure
+(consistent with the one-person-one-vote stance above); the GDP-weighted
+alternative changes no shipped spec, artifact, or hash and is reproduced in full
+(member GDP table + formula) in the vintage's `SOURCES.md`.

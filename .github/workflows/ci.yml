@@ -7,11 +7,18 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          # macOS runners no longer ship CPython 3.8/3.9 for arm64.
+          - os: macos-latest
+            python-version: "3.8"
+          - os: macos-latest
+            python-version: "3.9"
     steps:
       - uses: actions/checkout@v4
 
@@ -21,23 +28,28 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Determinism guard (standalone, no dependencies)
-        run: python3 test_determinism_guard.py
+        shell: bash
+        run: python test_determinism_guard.py
 
       - name: Vintages reproduce byte-for-byte
-        run: python3 make_vintages.py --verify
+        shell: bash
+        run: python make_vintages.py --verify
 
       - name: Standalone test suites (no pytest)
+        shell: bash
         run: |
-          python3 test_vintages.py
-          python3 test_ppp.py
-          python3 test_cli.py
-          python3 test_anchor.py
+          python test_vintages.py
+          python test_ppp.py
+          python test_cli.py
+          python test_anchor.py
 
       - name: Install dev extras and run pytest
+        shell: bash
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -e ".[dev]"
-          python3 -m pytest -q
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pytest -q
 
       - name: Demo (sanity)
-        run: python3 openunit.py
+        shell: bash
+        run: python openunit.py
