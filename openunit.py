@@ -82,9 +82,11 @@ def _compute(spec):
         for e in basket:
             pop = _D(e["population"])
             mult = _D(e.get("weight_multiplier", "1"))
+            if pop < 0:
+                raise ValueError("population must be >= 0 for %s" % e.get("code"))
             total_pop += pop
             total_eff += pop * mult
-        if total_pop == 0 or total_eff == 0:
+        if total_pop <= 0 or total_eff <= 0:
             raise ValueError("total population (and effective weight) must be > 0")
 
         baseline_value = Decimal(0)

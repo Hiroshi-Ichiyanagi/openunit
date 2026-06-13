@@ -5,6 +5,22 @@ All notable changes to openunit are documented here. The format follows
 specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
+## [0.3.0] — 2026-06-14
+
+### Changed
+
+- **Input domain tightened: negative populations are now rejected.** The engine
+  (`openunit._compute`) raises `ValueError` on any individual `population < 0`,
+  closing the previously-undefined edge where a negative value was accepted as
+  long as the basket total stayed positive. The independent verifier
+  (`verify_independent.py`) rejects it identically. Because every published
+  vintage uses real, non-negative UN WPP populations with positive totals, **no
+  published artifact or hash changes** (v0.1 `sha256:1e615cf7…9a3a`, v0.2
+  `sha256:566c95c1…b97a`, v0 sample `sha256:433d5e95…56bd` all unchanged). The
+  characterization test that pinned the old behavior is replaced by
+  `test_negative_population_is_rejected`, which pins the new contract. `SPEC.md`
+  ("Input domain") updated accordingly.
+
 ## [0.2.2] — 2026-06-13
 
 ### Added

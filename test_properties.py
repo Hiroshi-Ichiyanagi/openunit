@@ -15,9 +15,9 @@ idealized version:
     precision 50 (curated vintages land on an exact 1; arbitrary baskets carry a
     residual of order 1e-50). The determinism guard already uses the same
     tolerance approach (prec 60, tol 1e-30).
-  - Negative per-entry populations are NOT rejected as long as the basket total
-    stays > 0; only a non-positive TOTAL (and non-positive FX) is rejected. That
-    is a current-behavior fact, frozen here rather than wished away.
+  - A negative per-entry population is rejected (since v0.3); a non-positive
+    TOTAL population/effective weight and a non-positive FX rate are rejected.
+    These are pinned so the input domain cannot drift silently.
 
 Standalone (`python3 test_properties.py`) and pytest compatible.
 """
@@ -177,54 +177,59 @@ def test_canonical_key_order_invariance_and_basket_order_sensitivity():
                 "digest unchanged under basket reordering -- order must matter"
 
 
+def _edge_spec(basket):
+    return {"method": "openunit", "method_version": "v0",
+            "weight_vintage": {"label": "e", "basis": "population_share"},
+            "basket": basket}
+
+
+def _edge_entry(pop, fxb="1.0", fxv="1.0"):
+    return {"code": "A", "population": pop,
+            "fx_baseline_usd_per_unit": fxb, "fx_valuation_usd_per_unit": fxv}
+
+
 def test_non_positive_total_population_and_fx_are_rejected():
-    """Current engine contract, frozen: a non-positive TOTAL population, and any
-    non-positive FX rate, raise ValueError. (Per-entry negative population with a
-    positive total is intentionally NOT covered here -- see the next test.)"""
-    def spec(basket):
-        return {"method": "openunit", "method_version": "v0",
-                "weight_vintage": {"label": "e", "basis": "population_share"},
-                "basket": basket}
-
-    def entry(pop, fxb="1.0", fxv="1.0"):
-        return {"code": "A", "population": pop,
-                "fx_baseline_usd_per_unit": fxb, "fx_valuation_usd_per_unit": fxv}
-
+    """Engine contract, frozen: a non-positive TOTAL population, and any
+    non-positive FX rate, raise ValueError."""
     rejecting = [
-        [entry("0")],                              # total population 0
-        [entry("-100"), entry("100")],             # total cancels to 0
-        [entry("100", fxb="0")],                   # fx_baseline 0
-        [entry("100", fxb="-1.0")],                # fx_baseline negative
-        [entry("100", fxv="0")],                   # fx_valuation 0
-        [entry("100", fxv="-1.0")],                # fx_valuation negative
+        [_edge_entry("0")],                            # total population 0
+        [_edge_entry("100", fxb="0")],                 # fx_baseline 0
+        [_edge_entry("100", fxb="-1.0")],              # fx_baseline negative
+        [_edge_entry("100", fxv="0")],                 # fx_valuation 0
+        [_edge_entry("100", fxv="-1.0")],              # fx_valuation negative
     ]
     for basket in rejecting:
         try:
-            openunit.build_artifact(spec(basket))
+            openunit.build_artifact(_edge_spec(basket))
         except ValueError:
             continue
         raise AssertionError("expected ValueError for basket %r" % basket)
 
 
-def test_negative_population_with_positive_total_is_currently_accepted():
-    """Honest characterization test: the engine does NOT reject a negative
-    per-entry population as long as the basket total stays > 0. This freezes
-    current behavior (it is not an endorsement); if the engine ever starts
-    rejecting negative populations, this test should be updated deliberately."""
-    spec = {"method": "openunit", "method_version": "v0",
-            "weight_vintage": {"label": "e", "basis": "population_share"},
-            "basket": [
-                {"code": "A", "population": "-50",
-                 "fx_baseline_usd_per_unit": "1.0",
-                 "fx_valuation_usd_per_unit": "1.0"},
-                {"code": "B", "population": "100",
-                 "fx_baseline_usd_per_unit": "1.0",
-                 "fx_valuation_usd_per_unit": "1.0"}]}
-    art = openunit.build_artifact(spec)            # must not raise
-    assert openunit.verify_artifact(art, spec) is True
-    # share is population_i / total with a negative numerator -> a negative share
-    shares = {r["code"]: Decimal(r["population_share"]) for r in art["basket"]}
-    assert shares["A"] < 0 and shares["B"] > 1
+def test_negative_population_is_rejected():
+    """Since v0.3 the engine rejects any individual negative population, whether
+    or not the basket total stays positive. (Earlier versions accepted it when
+    the total remained > 0; this test pins the v0.3 tightening so the input
+    domain cannot drift silently -- see SPEC.md 'Input domain'.)"""
+    cases = [
+        [_edge_entry("-50"), _edge_entry("100")],      # total still positive
+        [_edge_entry("-100")],                         # lone negative entry
+        [_edge_entry("-100"), _edge_entry("100")],     # total cancels to 0
+    ]
+    for basket in cases:
+        try:
+            openunit.build_artifact(_edge_spec(basket))
+        except ValueError:
+            continue
+        raise AssertionError("negative population accepted for %r" % basket)
+
+    # the independent verifier (separate implementation) must reject it too
+    neg = _edge_spec([_edge_entry("-50"), _edge_entry("100")])
+    try:
+        verify_independent.recompute_artifact(neg)
+    except ValueError:
+        return
+    raise AssertionError("independent verifier accepted a negative population")
 
 
 def test_guard_is_scoped_to_engine_not_tests():

@@ -82,11 +82,13 @@ def recompute_artifact(spec):
         weighted_headcount = Decimal(0)
         for e in entries:
             p = Decimal(e["population"])
+            if p < 0:
+                raise ValueError("population must be >= 0 for %r" % e.get("code"))
             headcount += p
             weighted_headcount += p * Decimal(e.get("weight_multiplier", "1"))
-        if headcount == 0 or weighted_headcount == 0:
+        if headcount <= 0 or weighted_headcount <= 0:
             raise ValueError(
-                "spec basket has zero total population / effective weight")
+                "spec basket has non-positive total population / effective weight")
 
         per_entry = []
         baseline_total = Decimal(0)

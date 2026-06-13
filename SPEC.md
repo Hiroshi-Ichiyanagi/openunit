@@ -155,14 +155,19 @@ Any single-field tamper breaks (2) and/or (3). From the command line:
 
 ## Input domain
 
-The engine validates two conditions on a basket: the sum of population weights
-must be greater than zero, and every FX rate must be greater than zero. It does
-**not** currently reject an individual negative population value — such a value
-is accepted as long as the total remains positive. This is a known limitation,
-pinned by test (`test_negative_population_with_positive_total_is_currently_accepted`)
-so the behavior cannot change silently. All published vintages use only real,
-non-negative population data (UN WPP), so no published vintage is affected.
-Tightening the input domain to reject negative populations is planned for v0.3.
+The engine validates a basket as follows: every individual `population` must be
+**≥ 0**, the **total** population must be **> 0** (so the weights are
+well-defined), the total effective weight (population × multiplier) must be
+**> 0**, and every FX rate must be **> 0**. Any violation raises `ValueError`
+and no artifact is produced.
+
+Rejecting an individual negative `population` was tightened in **v0.3**; earlier
+versions accepted a negative value as long as the basket total stayed positive.
+The transition is pinned by test (`test_negative_population_is_rejected`) so the
+behavior cannot drift silently. All published vintages use only real,
+non-negative population data (UN WPP) with positive totals, so this tightening
+changes **no** published artifact and **no** hash — it only narrows the accepted
+input domain at its previously-undefined edge.
 
 ## 6. Reference vintages
 
