@@ -23,6 +23,15 @@ V0_ARTIFACT_HASH = (
 V0_INPUT_DIGEST = (
     "sha256:9e5c721b2131fe92059f05d702668d2bcb428afab3a27b1e79da9e578a1ef055")
 
+# Pinned hashes of the shipped real vintages (post verbatim-ECB normalization,
+# 2026-06-13 -- see docs/AUDIT.md addendum). Must match data/ exactly.
+VINTAGE_ARTIFACT_HASH = {
+    "v0.1-2026-05-15":
+        "sha256:1e615cf7cffe025667c98150cfb2010ed368bf838fe3b14fd460b05974839a3a",
+    "v0.2-ppp-2026-05-15":
+        "sha256:566c95c1753dbcaa70bbfd58c295ced2117d4907d4d7aabb992d68a93f10b97a",
+}
+
 
 def _load(p):
     with open(p, "r", encoding="utf-8") as fh:
@@ -48,6 +57,19 @@ def test_all_vintages_reproduce():
         assert art_built == art_disk, "vintage %s does not reproduce" % d
         assert openunit.verify_artifact(art_disk, spec), \
             "vintage %s fails verification" % d
+
+
+def test_vintage_hashes_are_pinned():
+    """Each shipped vintage carries exactly its pinned artifact_hash, and every
+    vintage under data/ is covered by a pin (no unpinned vintage ships)."""
+    dirs = sorted(os.path.basename(os.path.dirname(p)) for p in
+                  glob.glob(os.path.join(HERE, "data", "*", "artifact.json")))
+    assert dirs == sorted(VINTAGE_ARTIFACT_HASH), \
+        "vintages on disk do not match the pinned set: %s" % dirs
+    for vid, expected in VINTAGE_ARTIFACT_HASH.items():
+        art = _load(os.path.join(HERE, "data", vid, "artifact.json"))
+        assert art["artifact_hash"] == expected, \
+            "pinned artifact_hash regressed for %s" % vid
 
 
 def test_v0_1_fx_is_exact_quotient_of_ecb():

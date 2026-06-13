@@ -2,8 +2,8 @@
 
 **Status: REAL DATA.** Every input below is transcribed from a named public source. Re-running `make_vintages.py` reproduces `spec.json` and `artifact.json` byte for byte.
 
-- `input_digest`  : `sha256:495f80f2d6e30f6cb4ecd8da0ee577a4d8c747912c190105f56ba5e9079fa80a`
-- `artifact_hash` : `sha256:82bade1f93771aa097376c0c05d5058c70655c970724cf30f82e8a2978169655`
+- `input_digest`  : `sha256:90b54dc587507e5d54d6666382ee66bbc81b9372a795bc27d2c69ea0e993fe25`
+- `artifact_hash` : `sha256:1e615cf7cffe025667c98150cfb2010ed368bf838fe3b14fd460b05974839a3a`
 
 ## Foreign exchange (ECB euro reference rates)
 
@@ -14,9 +14,9 @@ Units of currency per 1 EUR, exactly as published by the European Central Bank.
 | EUR | 1 (base) | 1 (base) |
 | USD | 1.1642 | 1.1628 |
 | JPY | 183.52 | 184.36 |
-| GBP | 0.8677 | 0.87050 |
+| GBP | 0.8677 | 0.8705 |
 | CNY | 8.1288 | 7.9194 |
-| INR | 105.0335 | 111.5940 |
+| INR | 105.0335 | 111.594 |
 
 - baseline (2026-01-09): https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml
 - valuation (2026-05-15): https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml

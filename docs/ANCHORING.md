@@ -66,7 +66,7 @@ The proof goes in the record's `external_proof` field:
 ```json
 {
   "version": "openunit-anchor-1",
-  "artifact_hash": "sha256:82bade1f…9655",
+  "artifact_hash": "sha256:1e615cf7…9a3a",
   "sequence": 0,
   "prev_commitment": null,
   "label": "v0.1 published",

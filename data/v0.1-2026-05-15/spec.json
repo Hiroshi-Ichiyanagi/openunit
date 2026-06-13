@@ -73,7 +73,7 @@
       "fx_baseline_usd_per_unit": "1.3417079635818831393338711536245246052783220006915",
       "fx_valuation_usd_per_unit": "1.3357840321654221711659965537047673750717978173464",
       "source_eur_per_unit_baseline": "0.8677",
-      "source_eur_per_unit_valuation": "0.87050"
+      "source_eur_per_unit_valuation": "0.8705"
     },
     {
       "code": "INR",
@@ -82,7 +82,7 @@
       "fx_baseline_usd_per_unit": "0.011084082697425107227694021431257646369967676979249",
       "fx_valuation_usd_per_unit": "0.010419915049196193343728157427818699930103769019840",
       "source_eur_per_unit_baseline": "105.0335",
-      "source_eur_per_unit_valuation": "111.5940"
+      "source_eur_per_unit_valuation": "111.594"
     }
   ]
 }

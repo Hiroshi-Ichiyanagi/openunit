@@ -5,6 +5,41 @@ All notable changes to openunit are documented here. The format follows
 specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
+## [0.2.2] — 2026-06-13
+
+### Added
+
+- **Independent second-implementation verifier** (`verify_independent.py`):
+  re-verifies an artifact against its spec from `SPEC.md` / `ARTIFACT_FORMAT.md`
+  alone, never importing `openunit`/`cli`/`anchor`. Standard library only;
+  exit 0 iff every field and both hashes match. Wired into `make verify`, a new
+  `make verify-independent` target, and CI (all OSes).
+- **Property / edge tests** (`test_properties.py`): randomized valid baskets
+  (fixed seed, test-only `random`) check byte-identical rebuilds, weight/baseline
+  invariants within rounding tolerance, agreement with the independent
+  recomputation, single-character tamper rejection, and canonical key-order
+  invariance vs. basket-order sensitivity. Edge tests freeze current engine
+  behavior for non-positive total population / FX (rejected) and negative
+  per-entry population with a positive total (currently accepted — characterized
+  honestly, not changed).
+- **Cross-validation tests** (`test_independent.py`): the engine's artifacts are
+  checked by the engine-free verifier across every vintage, the v0 sample, and
+  the multiplier branch, with tamper/spec-mismatch rejection.
+- `test_vintages.py` now pins each shipped vintage's `artifact_hash` and asserts
+  no unpinned vintage ships.
+
+### Changed
+
+- **Verbatim ECB strings.** Two valuation-leg rates transcribed in
+  `make_vintages.py` carried a cosmetic trailing zero (`GBP 0.87050`,
+  `INR 111.5940`); they are normalized to the exact official ECB XML strings
+  (`0.8705`, `111.594`). **Numbers are unchanged** (`1 openunit = 0.985631 USD`),
+  but the raw strings are part of the v0.1 hashed spec, so the **v0.1 hashes
+  change**: `artifact_hash sha256:82bade1f…9655 → sha256:1e615cf7…9a3a`
+  (`input_digest sha256:495f80f2…a80a → sha256:90b54dc5…fe25`). The v0.2 vintage
+  (`sha256:566c95c1…b97a`) and the v0 sample (`sha256:433d5e95…56bd`) are
+  unchanged. Documented in `docs/AUDIT.md` (addendum). Engine code is untouched.
+
 ## [0.2.1] — 2026-06-09
 
 ### Changed

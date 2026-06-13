@@ -121,6 +121,6 @@ artifact_hash: sha256:433d5e9560f8dcf928c6d2aff9c48ecb9eba558d19fc8eff191056f3f1
 ```
 
 The real `v0.1-2026-05-15` vintage must produce
-`artifact_hash sha256:82bade1f…9655`, and the real-PPP `v0.2-ppp-2026-05-15`
+`artifact_hash sha256:1e615cf7…9a3a`, and the real-PPP `v0.2-ppp-2026-05-15`
 vintage (World Bank `PA.NUS.PPP`, ICP 2024) `sha256:566c95c1…b97a`. Every
 bundled vintage is reproduced byte-for-byte by `test_vintages.py`.

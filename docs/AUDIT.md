@@ -4,7 +4,9 @@
 (`data/v0.1-2026-05-15`, `data/v0.2-ppp-2026-05-15`) was independently
 re-derived from its primary source and matches, with **zero mismatches**.
 
-- **Audit date:** 2026-06-10
+- **Audit date:** 2026-06-10 *(addendum 2026-06-13: verbatim normalization — see
+  the final section; the v0.1 hashes quoted below are the pre-normalization
+  ones, accurate as of the audit date)*
 - **Method:** each source was fetched fresh from its official endpoint and
   compared field-by-field against the constants transcribed in
   `make_vintages.py` and the raw tables in each vintage's `SOURCES.md`. FX and
@@ -147,3 +149,30 @@ Every published number is faithful to its named primary source. **Confirmed.**
 
 *Reproduce this audit by re-fetching the three endpoints above and comparing
 against `make_vintages.py` / each vintage's `SOURCES.md`.*
+
+---
+
+## Addendum (2026-06-13): verbatim normalization of two ECB strings
+
+The §1 table flagged two transcriptions carrying a cosmetic trailing zero
+relative to the ECB's official XML: valuation GBP `0.87050` (official `0.8705`)
+and valuation INR `111.5940` (official `111.594`). On 2026-06-13 these two
+strings in `make_vintages.py` were normalized to the **verbatim** official form,
+after re-confirming all 10 rates against a fresh pull of
+<https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml> (the other 8
+already matched verbatim).
+
+- **Numeric values unchanged.** `0.87050 == 0.8705` and `111.5940 == 111.594`
+  as exact `Decimal`s; every derived FX quotient, every weight, and
+  `value_usd = 0.985631 USD` are byte-identical.
+- **v0.1 hashes changed** (the raw `source_eur_per_unit_valuation` strings are
+  part of the hashed spec):
+  - `input_digest`: `sha256:495f80f2…a80a` → `sha256:90b54dc5…fe25`
+  - `artifact_hash`: `sha256:82bade1f…9655` → `sha256:1e615cf7…9a3a`
+- **v0.2 hashes unchanged** (`sha256:566c95c1…b97a`): its spec embeds no raw
+  ECB strings, and the derived nominal-FX baseline is the identical quotient.
+- The v0 sample hash is untouched (`sha256:433d5e95…56bd`).
+
+After normalization, every transcription in `make_vintages.py` is **verbatim
+identical** to its official source string, so the "(= numerically)" caveats in
+§1 no longer apply to the shipped code.

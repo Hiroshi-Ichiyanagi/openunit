@@ -42,6 +42,15 @@ jobs:
           python test_ppp.py
           python test_cli.py
           python test_anchor.py
+          python test_independent.py
+          python test_properties.py
+
+      - name: Independent second-implementation verifier (no engine import)
+        shell: bash
+        run: |
+          for d in data/*/; do
+            python verify_independent.py "$d/spec.json" "$d/artifact.json"
+          done
 
       - name: Install dev extras and run pytest
         shell: bash

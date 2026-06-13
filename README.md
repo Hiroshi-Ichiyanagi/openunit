@@ -60,7 +60,7 @@ Method v0.1 (one person, one vote) on real, named inputs.
 - inputs: UN **World Population Prospects 2024** (2026 estimate) + **ECB euro
   reference rates** (baseline `2026-01-09`, valuation `2026-05-15`)
 - **1 openunit = 0.985631 USD**
-- `artifact_hash` `sha256:82bade1f…9655`
+- `artifact_hash` `sha256:1e615cf7…9a3a`
 - population-pinned weights: India 39.08 %, China 37.39 %, United States
   9.24 %, euro area 9.20 %, Japan 3.24 %, United Kingdom 1.85 %
 
@@ -110,6 +110,30 @@ openunit verify artifact.json spec.json
 content, and rebuilding from the spec reproduces the artifact exactly. Any
 single-field edit to either file breaks verification. See `SPEC.md` §5.
 
+## Independent verification (don't even trust the engine)
+
+`openunit verify` uses the engine to check the engine's own output. If you do
+not want to extend even that much trust, `verify_independent.py` is a **second
+implementation** of the entire verification procedure, written from `SPEC.md`
+and `ARTIFACT_FORMAT.md` alone: it never imports `openunit`/`cli`/`anchor` and
+shares no code with them. It re-derives every weight, amount, value, and both
+hashes from the spec, then compares the published artifact field by field
+(standard library only):
+
+```sh
+python3 verify_independent.py data/v0.1-2026-05-15/spec.json \
+                              data/v0.1-2026-05-15/artifact.json
+# INDEPENDENT VERIFICATION: PASS
+#   input_digest  : sha256:90b54dc5…fe25
+#   artifact_hash : sha256:1e615cf7…9a3a
+```
+
+Exit 0 means two independent implementations of the published format agree,
+byte for byte; any mismatch lists the differing fields and exits 1. Run it over
+every shipped vintage with `make verify-independent` (also part of
+`make verify` and CI). If the engine were ever wrong or tampered with, this is
+the program that would say so.
+
 ## Determinism guarantees
 
 - **Standard library only** (`json`, `hashlib`, `decimal`).
@@ -141,15 +165,18 @@ openunit.py                 engine: build_artifact / verify_artifact (+ demo)
 cli.py                      command-line interface
 anchor.py                   tamper-evident anchoring (offline hash-chain)
 make_vintages.py            regenerate / --verify the pinned data vintages
+verify_independent.py       independent second-implementation verifier (no engine import)
 sample_input.json           illustrative v0 spec (non-authoritative)
 data/
   v0.1-2026-05-15/          REAL vintage: spec.json, artifact.json, SOURCES.md
   v0.2-ppp-2026-05-15/      REAL PPP vintage: World Bank PA.NUS.PPP (ICP 2024)
 test_determinism_guard.py   4 determinism invariants (standalone + pytest)
-test_vintages.py            backward-compat hash, reproduction, FX integrity
+test_vintages.py            backward-compat hash, pinned vintage hashes, FX integrity
 test_ppp.py                 PPP leg + population×multiplier weighting
 test_cli.py                 CLI end to end
 test_anchor.py              anchoring commitment, chaining, tamper detection
+test_independent.py         engine × independent-verifier cross-validation
+test_properties.py          randomized property / edge / tamper tests (fixed seed)
 SPEC.md                     specification
 ARTIFACT_FORMAT.md          byte-level spec.json / artifact.json format
 docs/ANCHORING.md           anchoring model and external timestamping
