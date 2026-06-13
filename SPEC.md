@@ -153,6 +153,17 @@ pinned in `test_vintages.py` to `artifact_hash`
 Any single-field tamper breaks (2) and/or (3). From the command line:
 `openunit verify artifact.json spec.json` (exit 0 on success, 1 on failure).
 
+## Input domain
+
+The engine validates two conditions on a basket: the sum of population weights
+must be greater than zero, and every FX rate must be greater than zero. It does
+**not** currently reject an individual negative population value — such a value
+is accepted as long as the total remains positive. This is a known limitation,
+pinned by test (`test_negative_population_with_positive_total_is_currently_accepted`)
+so the behavior cannot change silently. All published vintages use only real,
+non-negative population data (UN WPP), so no published vintage is affected.
+Tightening the input domain to reject negative populations is planned for v0.3.
+
 ## 6. Reference vintages
 
 Bundled under `data/`, each with `spec.json`, `artifact.json`, and `SOURCES.md`.

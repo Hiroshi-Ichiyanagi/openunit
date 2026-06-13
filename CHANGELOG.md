@@ -39,6 +39,9 @@ versions** (the `method_version` field) and to releases of this repository.
   (`input_digest sha256:495f80f2…a80a → sha256:90b54dc5…fe25`). The v0.2 vintage
   (`sha256:566c95c1…b97a`) and the v0 sample (`sha256:433d5e95…56bd`) are
   unchanged. Documented in `docs/AUDIT.md` (addendum). Engine code is untouched.
+- Docs: disclose input-domain limitation — a negative individual population
+  value is currently accepted when the basket total is positive (pinned by
+  test); rejection planned for v0.3.
 
 ## [0.2.1] — 2026-06-09
 
