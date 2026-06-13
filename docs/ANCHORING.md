@@ -90,3 +90,22 @@ openunit.
   break.
 - *Backdating* → not addressed by the offline core; addressed by attaching an
   `external_proof` from a public timestamp.
+
+## Third-party timestamp (OpenTimestamps)
+
+The two shipped vintages carry an OpenTimestamps proof committing each
+`artifact.json` to the Bitcoin blockchain, so a third party can confirm the
+artifact existed by a point in time without trusting this repository. The proofs
+are `data/v0.1-2026-05-15/artifact.json.ots` and
+`data/v0.2-ppp-2026-05-15/artifact.json.ots`; OpenTimestamps commits to the
+**bytes of the `artifact.json` file** (not openunit's internal `artifact_hash`,
+which is a separate, in-document hash), so verification needs the exact file the
+proof was made from. To check one — using only the standard OpenTimestamps
+client, never openunit — run `ots verify data/v0.1-2026-05-15/artifact.json.ots`
+(it locates `data/v0.1-2026-05-15/artifact.json` automatically). A proof is
+created as a *calendar commitment* and is initially **pending** Bitcoin
+confirmation; once the calendars fold it into a block (typically hours to a day
+later), `ots upgrade data/v0.1-2026-05-15/artifact.json.ots` rewrites the `.ots`
+with the Bitcoin attestation and `ots verify` then reports the confirming block
+height and time. The `.ots` files live outside every openunit hash, so adding or
+upgrading them changes no `artifact_hash` and no `input_digest`.
