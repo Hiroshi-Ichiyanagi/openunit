@@ -109,3 +109,9 @@ later), `ots upgrade data/v0.1-2026-05-15/artifact.json.ots` rewrites the `.ots`
 with the Bitcoin attestation and `ots verify` then reports the confirming block
 height and time. The `.ots` files live outside every openunit hash, so adding or
 upgrading them changes no `artifact_hash` and no `input_digest`.
+
+Both shipped proofs have been upgraded to **Bitcoin confirmation**: they carry
+`BitcoinBlockHeaderAttestation`s at block heights **953507**, **953528**, and
+**953536** (multiple calendars, so the earliest block bounds the timestamp).
+`ots verify` confirms them against a Bitcoin node; `ots info <file>.ots` lists
+the attested block heights without one.
