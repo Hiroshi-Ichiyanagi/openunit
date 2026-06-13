@@ -219,9 +219,15 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
 ## 9. Roadmap
 
 - Additional real pinned vintages over time (rolling baseline/valuation dates,
-  and new ICP years for the PPP leg as the World Bank publishes them).
-- A published-artifact **format standard** and a minimal third-party verifier.
-- Optional **public timestamping** recipes for anchors (the core stays offline).
+  and new ICP years for the PPP leg as the World Bank publishes them; ICP 2024
+  is currently the latest year for which every basket economy and euro-area
+  member has a value).
+- ✅ A published-artifact **format standard** (`openunit-artifact-1`, see
+  `ARTIFACT_FORMAT.md` §9) and a **minimal third-party verifier**
+  (`verify_independent.py`, engine-free, stdlib-only).
+- ✅ **Public timestamping** for anchors: the shipped vintages carry
+  OpenTimestamps proofs confirmed in the Bitcoin blockchain
+  (`docs/ANCHORING.md`); the core stays offline.
 
 ## 10. On "fairness"
 

@@ -1,8 +1,11 @@
 # openunit — Artifact & Spec Format
 
-This document fixes the on-disk and on-the-wire byte layout precisely enough for
-an independent implementation to reproduce openunit hashes exactly. The
-authoritative encoder is `openunit.canonical`.
+**Format standard version `openunit-artifact-1`.** This document fixes the
+on-disk and on-the-wire byte layout precisely enough for an independent
+implementation to reproduce openunit hashes exactly. The authoritative encoder
+is `openunit.canonical`; the normative behavior is the text of this document
+plus `SPEC.md`. Sections 1–8 are the format; section 9 states conformance and
+names the minimal third-party verifier.
 
 ## 1. Numbers are strings
 
@@ -124,3 +127,37 @@ The real `v0.1-2026-05-15` vintage must produce
 `artifact_hash sha256:1e615cf7…9a3a`, and the real-PPP `v0.2-ppp-2026-05-15`
 vintage (World Bank `PA.NUS.PPP`, ICP 2024) `sha256:566c95c1…b97a`. Every
 bundled vintage is reproduced byte-for-byte by `test_vintages.py`.
+
+## 9. Conformance and the reference verifier
+
+An implementation **conforms** to `openunit-artifact-1` iff, for every spec it
+accepts, it produces an artifact identical — byte for byte under the canonical
+encoding (§2) — to one built per §§1–8 and `SPEC.md`, and computes the same
+`input_digest` and `artifact_hash`. Concretely, a conforming implementation:
+
+1. parses every numeric field as an exact decimal at precision 50,
+   `ROUND_HALF_EVEN`, never as a float (§1);
+2. hashes only the canonical bytes — keys sorted, `separators=(",", ":")`,
+   `ensure_ascii=False`, UTF-8 (§2–3);
+3. emits exactly the artifact fields of §6–7, including the conditional
+   `weight_multiplier` / `effective_weight` pair **iff** at least one basket
+   entry carries a multiplier (the backward-compatibility rule);
+4. enforces the input domain of `SPEC.md` ("Input domain"): every `population`
+   `≥ 0`, total population `> 0`, total effective weight `> 0`, every FX rate
+   `> 0`; otherwise it produces no artifact.
+
+**Minimal third-party verifier.** `verify_independent.py` (bundled) is a second
+implementation of this standard written from `SPEC.md` and this document alone —
+it never imports `openunit`, `cli`, or `anchor`, and uses only the standard
+library. It re-derives every field and both hashes from a spec and compares them
+against a published artifact (`python3 verify_independent.py spec.json
+artifact.json`, exit 0 iff every field matches). It is both the conformance
+oracle for this standard and the tool a third party can run to check a published
+value without trusting the openunit engine. `test_independent.py` and
+`test_properties.py` cross-validate the engine against it.
+
+**Versioning.** This is `openunit-artifact-1`. A future revision that changes
+the byte layout, the field set, the hashing, or the input domain in a
+hash-affecting way increments the standard version (`-2`, …); changes that do
+not affect any byte (documentation, new optional descriptive spec keys, which
+are already hashed transparently per §4) stay within `-1`.

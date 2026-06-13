@@ -7,6 +7,14 @@ versions** (the `method_version` field) and to releases of this repository.
 
 ## [0.3.0] — 2026-06-14
 
+### Added
+
+- **Published-artifact format standard `openunit-artifact-1`** (`ARTIFACT_FORMAT.md`
+  §9): a normative conformance definition and a version identifier for the byte
+  layout, naming `verify_independent.py` as the minimal third-party verifier /
+  conformance oracle. `SPEC.md` roadmap marks the format-standard and public
+  (Bitcoin) timestamping items delivered.
+
 ### Changed
 
 - **Input domain tightened: negative populations are now rejected.** The engine
