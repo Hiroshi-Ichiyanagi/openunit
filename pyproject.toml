@@ -29,7 +29,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+dev = ["pytest>=8.4.2"]
 
 [project.urls]
 Homepage = "https://github.com/Hiroshi-Ichiyanagi/openunit"
