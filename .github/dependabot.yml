@@ -4,6 +4,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # openunit advertises Python >=3.8 (see pyproject classifiers + CI matrix).
+    # pytest >=9 and setuptools >=80/83 require Python >=3.10, so raising the
+    # floor to them would break 3.8/3.9 support. Ignore those bumps until the
+    # supported-Python range is intentionally raised.
+    ignore:
+      - dependency-name: "pytest"
+        versions: [">=9.0.0"]
+      - dependency-name: "setuptools"
+        versions: [">=80.0.0"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
