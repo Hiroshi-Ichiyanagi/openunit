@@ -4,7 +4,7 @@ A deterministic, publicly verifiable, **population-weighted unit of account**.
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-none%20(stdlib)-success.svg)
 
 openunit is a *measuring stick*, not money. It does not issue a currency, hold
@@ -26,6 +26,33 @@ number and the exact same hashes, byte for byte.
   advice. The reference value is quoted in a numeraire (USD here) only as a
   readable denomination; the *unit itself* is defined by the basket.
 
+## Scope, licence and terms
+
+- **Information only.** openunit publishes a reproducible measurement for
+  information. It is not offered as a benchmark for financial instruments or
+  contracts, nor as the backing or reference value of a token.
+- **The licence is not a use restriction, and not an assurance of
+  suitability.** The Apache License 2.0 covers the code: it lets anyone use, modify and
+  redistribute it, and it does not itself restrict *what* anyone uses openunit
+  for. Equally, nothing in the licence or in this README says a given use is
+  suitable or lawful. Whether a use is regulated (for example as a benchmark)
+  depends on how and by whom openunit is used, not on this statement; anyone
+  who builds on it must check the rules that apply to them.
+- **Data terms are separate from the code licence.** Each input keeps its
+  publisher's terms (each vintage's `SOURCES.md` names its publishers): the ECB's euro
+  reference rates are published "for information purposes only" and are reused
+  under the ECB's conditions (cite the ECB, state any modification;
+  <https://www.ecb.europa.eu/home/disclaimer/html/index.en.html>); UN World
+  Population Prospects data are licensed CC BY 3.0 IGO; World Bank `PA.NUS.PPP`
+  data CC BY 4.0.
+- **Independent.** openunit is not affiliated with, endorsed by, or certified
+  by IOSCO, the IMF, the ECB, the United Nations, the World Bank, or any other
+  authority or standard-setter. Mentions of the SDR method or of these
+  publishers describe the method and the inputs only. Any future description of
+  openunit's governance against published principles (such as IOSCO's
+  Principles for Financial Benchmarks) would be a voluntary self-description,
+  not a certification.
+
 ## Why
 
 Expressing value in a single national currency bakes in the politics of who
@@ -44,7 +71,8 @@ python3 make_vintages.py --verify     # real vintages reproduce, byte for byte
 python3 openunit.py                    # illustrative demo
 ```
 
-No third-party dependencies — Python **3.8+** standard library only.
+No third-party dependencies — Python **3.10+** (as declared in
+`pyproject.toml`), standard library only.
 
 ## The reference vintages
 
@@ -58,8 +86,16 @@ with machine-readable warnings; published vintage files are never rewritten.
 
 Method v0.1 (one person, one vote) on real, named inputs.
 
-- inputs: UN **World Population Prospects 2024** (2026 estimate) + **ECB euro
-  reference rates** (baseline `2026-01-09`, valuation `2026-05-15`)
+- inputs: UN **World Population Prospects 2024** (2026 medium-variant
+  projection) + **ECB euro reference rates** (baseline `2026-01-09`, valuation
+  `2026-05-15`)
+- **provenance note:** the UN figures were transcribed from **Worldometer's
+  republication**, not from the UN Population Division's own file; 23 of the
+  25 populations equal the UN file and Greece and Slovenia differ by one person
+  each. The euro area is counted as **20** members, but Bulgaria had joined on
+  2026-01-01. **Superseded by `v0.3-unwpp-2026-05-15`**, which reads the UN
+  primary file; this vintage is kept unchanged and still verifies (see
+  `data/vintages.json`).
 - **1 openunit = 0.985631 USD**
 - `artifact_hash` `sha256:1e615cf7…9a3a`
 - population-pinned weights: India 39.08 %, China 37.39 %, United States
@@ -72,6 +108,10 @@ Method v0.2 (population weights, PPP valuation leg) on real, named inputs: UN
 Bank `PA.NUS.PPP`** (ICP 2024) on the valuation leg, so the unit is read in
 **international dollars**.
 
+- provenance note: as in v0.1, populations come from Worldometer's
+  republication of UN WPP 2024 and the euro area has 20 members (Bulgaria
+  missing); `data/vintages.json` carries these warnings. No corrected PPP
+  vintage has been issued yet.
 - PA.NUS.PPP 2024 for USD/CNY/JPY/GBP/INR, transcribed exactly as published. The
   World Bank publishes **no single Euro-area** `PA.NUS.PPP` value, so the
   euro-area factor is a **population-weighted blend** of the 20 members' WB
@@ -213,4 +253,6 @@ record, rather than hidden inside an opaque index.
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 Hiroshi Ichiyanagi.
+Code: Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 Hiroshi
+Ichiyanagi. Bundled data keep their publishers' terms (see *Scope, licence and
+terms* above, `data/sources/SOURCES.md`, and each vintage's `SOURCES.md`).

@@ -13,3 +13,11 @@ openunit is a measuring stick, not money: it issues no currency, holds no
 reserves, and settles no payments. Data vintages bundled under data/ carry their
 own provenance and disclaimers in each vintage's SOURCES.md. Inputs labelled
 ILLUSTRATIVE are not authoritative.
+
+data/sources/un_wpp2024_population_2026.csv is an extract of United Nations,
+Department of Economic and Social Affairs, Population Division (2024). World
+Population Prospects 2024, Online Edition. Copyright (c) 2024 by United Nations,
+made available under CC BY 3.0 IGO (http://creativecommons.org/licenses/by/3.0/igo/).
+Changes: 26 rows selected; thousands converted to persons in an added column.
+The United Nations does not endorse openunit. The Apache License above applies
+to the code, not to third-party data.
