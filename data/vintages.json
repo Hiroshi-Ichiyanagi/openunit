@@ -39,6 +39,14 @@
         {
           "code": "POPULATION_VIA_REPUBLISHER",
           "detail": "UN WPP 2024 figures were taken from Worldometer's republication (the same numbers as v0.1, including the two 1-person differences from the UN file)."
+        },
+        {
+          "code": "PPP_LABEL",
+          "detail": "Labels its World Bank PA.NUS.PPP 2024 values 'ICP 2024' (SOURCES.md; ppp_status in the hashed spec). No ICP 2024 results have been released (latest ICP cycle: 2021, released May 2024). In WDI the 2024 values are the ICP 2021 benchmark extrapolated to 2024 by the World Bank for China and India, and Eurostat-OECD annual PPPs for Japan, the United Kingdom and the euro-area members; the United States is 1 by definition. See docs/AUDIT.md (2026-10-26)."
+        },
+        {
+          "code": "PPP_REVISED",
+          "detail": "Its 25 PA.NUS.PPP 2024 values equal the WDI release of April 2026. The World Bank revised 5 of them in the July 2026 release (unchanged as of the 2026-10-08 update): China 3.5325492491585 -> 3.52537888953537, India 20.4219876045922 -> 20.4522424138694, and Croatia, Cyprus and Malta by 0.0003% or less."
         }
       ]
     },

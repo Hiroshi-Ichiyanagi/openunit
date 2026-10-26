@@ -125,7 +125,7 @@ artifact_hash: sha256:433d5e9560f8dcf928c6d2aff9c48ecb9eba558d19fc8eff191056f3f1
 
 The real `v0.1-2026-05-15` vintage must produce
 `artifact_hash sha256:1e615cf7…9a3a`, the real-PPP `v0.2-ppp-2026-05-15`
-vintage (World Bank `PA.NUS.PPP`, ICP 2024) `sha256:566c95c1…b97a`, and the
+vintage (World Bank `PA.NUS.PPP`, 2024) `sha256:566c95c1…b97a`, and the
 UN-primary-file `v0.3-unwpp-2026-05-15` vintage `sha256:0fe13c83…b7af`. Every
 bundled vintage is reproduced byte-for-byte by `test_vintages.py`. (A spec's
 optional `supersedes` key, like every other extra key, is hashed as part of the

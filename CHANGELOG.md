@@ -53,6 +53,15 @@ versions** (the `method_version` field) and to releases of this repository.
 - v0.1 and v0.2 count **20** euro-area members; on their FX dates the euro area
   had **21** (Bulgaria from 2026-01-01). 23 of their 25 Worldometer-sourced
   populations equal the UN file; Greece and Slovenia differ by one person.
+- **v0.2's "ICP 2024" label is wrong.** No ICP 2024 results have been released
+  (the latest ICP cycle is 2021, released May 2024). WDI's `PA.NUS.PPP` values
+  for 2024 are the ICP 2021 benchmark extrapolated by the World Bank (China,
+  India) and Eurostat-OECD annual PPPs (Japan, United Kingdom, euro-area
+  members). v0.2's 25 values equal WDI's April 2026 release; the July 2026
+  release revised five of them (China −0.203 %, India +0.148 %, Croatia,
+  Cyprus and Malta by 0.0003 % or less). Recorded in `docs/AUDIT.md` and as
+  `PPP_LABEL` / `PPP_REVISED` warnings in `data/vintages.json`; the published
+  v0.2 files are unchanged.
 
 ## [0.3.0] — 2026-06-14
 

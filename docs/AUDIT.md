@@ -201,3 +201,80 @@ correction is a new vintage, `v0.3-unwpp-2026-05-15`, whose hashed spec
 declares that it supersedes v0.1; `data/vintages.json` records the link and
 the warnings, including the same membership warning for v0.2, for which no
 corrected PPP vintage has been issued yet.
+
+---
+
+## Addendum (2026-10-26): is v0.2's "ICP 2024" label right?
+
+v0.2 describes its World Bank `PA.NUS.PPP` values for reference year 2024 as
+"ICP 2024" (in its `SOURCES.md`, and as `ppp_status` "World Bank PA.NUS.PPP
+(ICP) 2024" in its hashed spec). Checked on 2026-10-26 against the World
+Bank's own pages and API (small JSON only; no bulk file downloaded):
+
+**Finding: the label is wrong. No ICP 2024 results exist yet, and none of
+v0.2's 2024 values is an ICP benchmark value.**
+
+- **No ICP 2024 release.** The ICP home page names the ICP 2021 cycle,
+  released in May 2024, as its latest release (benchmark year 2021, revised
+  2017, a 2018-2020 time series, and extrapolated GDP PPPs for 2022 and 2023).
+  The ICP FAQ says the ICP 2021 results will be revised and published together
+  with the ICP 2024 results, and that WDI's extrapolations will be replaced
+  once the next cycle's results are available.
+- **What WDI publishes for 2024.** The indicator metadata says ICP-estimated
+  PPPs cover 2011-2021 and that WDI extrapolates the 2021 PPPs to later years;
+  for members of the Eurostat-OECD PPP Programme, the factors come from that
+  programme's databases. The Data Help Desk article describes the
+  extrapolation: the 2021 benchmark PPP times the change in the economy's GDP
+  implicit deflator relative to the change in the US deflator; for European
+  and non-European OECD countries WDI incorporates the programme's annual PPPs.
+  Each 2024 observation in the API carries a footnote that tells the two apart:
+
+  | economies (v0.2 basket) | 2024 API footnote | what the value is |
+  |---|---|---|
+  | China, India | *(empty)* | **ICP 2021 benchmark, extrapolated to 2024 by the World Bank** (relative GDP deflator) |
+  | Japan, United Kingdom, all euro-area members (Bulgaria included) | `Eurostat-OECD annual PPP` | **Eurostat-OECD PPP Programme annual PPP for 2024**, as incorporated in WDI |
+  | United States | `Eurostat-OECD annual PPP` | 1 by definition (the international dollar is the US dollar) |
+
+- **The correct label for v0.2's inputs** is therefore: World Bank WDI
+  `PA.NUS.PPP`, reference year 2024 (WDI release of April 2026) -- ICP 2021
+  benchmark extrapolated to 2024 for China and India; Eurostat-OECD annual PPPs
+  for Japan, the United Kingdom and the euro-area members; US = 1.
+- **v0.2 transcribed the April 2026 release faithfully.** All 25 values equal
+  WDI Database Archives version `202604` exactly (numerically; USD is `1` in
+  the API and `1.0` in v0.2).
+- **The World Bank has since revised some of them.** In the July 2026 release
+  (archive version `202607`, unchanged in the current release, "last updated"
+  2026-10-08): China `3.5325492491585` -> `3.52537888953537` (-0.203%), India
+  `20.4219876045922` -> `20.4522424138694` (+0.148%), Croatia, Cyprus and Malta
+  by -0.0002% to -0.0003% each; the other 20 are unchanged. Bulgaria (not in
+  v0.2) moved from `0.757951749098367` (lev) to `0.387533240879461`: WDI's
+  country metadata now gives Bulgaria's currency unit as the euro, with the
+  irrevocable rate 1 EUR = 1.95583 BGN from 2026-01-01 (the new value is the
+  old one divided by 1.95583, to within -0.0003%). Caution: WDI's official
+  exchange rate for Bulgaria 2024 (`PA.NUS.FCRF`, `1.80784166666667`) is still
+  in lev in the same release; openunit does not use it.
+- The euro-area aggregate (`EMU`) is still `null` for 2024, so a member blend
+  is still needed.
+
+**Nothing published was rewritten.** v0.2's files and hashes stay as they are
+and still verify. `data/vintages.json` gives v0.2 two new warnings,
+`PPP_LABEL` and `PPP_REVISED`.
+
+Sources (all read 2026-10-26):
+
+- ICP home page: <https://www.worldbank.org/en/programs/icp>; ICP data page:
+  <https://www.worldbank.org/en/programs/icp/data>; ICP FAQ:
+  <https://www.worldbank.org/en/programs/icp/faq>
+- Indicator: <https://api.worldbank.org/v2/indicator/PA.NUS.PPP?format=json>
+  (source organisations: ICP, published 30 May 2024; Eurostat PPP Programme;
+  OECD PPP Programme)
+- Series metadata (methodology, licence CC BY-4.0):
+  <https://api.worldbank.org/v2/sources/2/series/PA.NUS.PPP/metadata?format=json>
+- Extrapolation method:
+  <https://datahelpdesk.worldbank.org/knowledgebase/articles/665452-how-do-you-extrapolate-the-ppp-conversion-factors>
+- 2024 values with footnotes:
+  `https://api.worldbank.org/v2/country/<26 economies + EMU>/indicator/PA.NUS.PPP?date=2024&format=json&footnote=y&per_page=100`
+- Earlier releases: `https://api.worldbank.org/v2/sources/57/country/<codes>/series/PA.NUS.PPP/version/202604/time/YR2024?format=json`
+  (and `202607`)
+- Bulgaria's currency unit:
+  <https://api.worldbank.org/v2/sources/2/country/BGR/metadata?format=json>

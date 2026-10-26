@@ -101,12 +101,20 @@ Method v0.1 (one person, one vote) on real, named inputs.
 - population-pinned weights: India 39.08 %, China 37.39 %, United States
   9.24 %, euro area 9.20 %, Japan 3.24 %, United Kingdom 1.85 %
 
-### `v0.2-ppp-2026-05-15` — **REAL DATA (World Bank `PA.NUS.PPP`, ICP 2024)**
+### `v0.2-ppp-2026-05-15` — **REAL DATA (World Bank `PA.NUS.PPP`, reference year 2024)**
 
 Method v0.2 (population weights, PPP valuation leg) on real, named inputs: UN
 **World Population Prospects 2024** + an **ECB** nominal-FX baseline + **World
-Bank `PA.NUS.PPP`** (ICP 2024) on the valuation leg, so the unit is read in
+Bank `PA.NUS.PPP`** for 2024 on the valuation leg, so the unit is read in
 **international dollars**.
+
+- **label correction:** the vintage calls these values "ICP 2024". No ICP
+  2024 results have been released (the latest ICP cycle is 2021). In the World
+  Bank's WDI the 2024 values are the ICP 2021 benchmark extrapolated to 2024
+  (China, India) and Eurostat-OECD annual PPPs (Japan, United Kingdom,
+  euro-area members). v0.2 matches WDI's April 2026 release; the World Bank
+  has since revised five of its 25 values (`docs/AUDIT.md`,
+  `data/vintages.json`).
 
 - provenance note: as in v0.1, populations come from Worldometer's
   republication of UN WPP 2024 and the euro area has 20 members (Bulgaria
@@ -225,7 +233,7 @@ verify_independent.py       independent second-implementation verifier (no engin
 sample_input.json           illustrative v0 spec (non-authoritative)
 data/
   v0.1-2026-05-15/          REAL vintage: spec.json, artifact.json, SOURCES.md
-  v0.2-ppp-2026-05-15/      REAL PPP vintage: World Bank PA.NUS.PPP (ICP 2024)
+  v0.2-ppp-2026-05-15/      REAL PPP vintage: World Bank PA.NUS.PPP 2024
   v0.3-unwpp-2026-05-15/    REAL vintage: UN primary population file; supersedes v0.1
   sources/                  committed source extracts (UN WPP 2024 rows) + SOURCES.md
   vintages.json             registry: supersedes / superseded_by links, warnings

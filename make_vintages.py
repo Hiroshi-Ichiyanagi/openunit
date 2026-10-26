@@ -18,8 +18,12 @@ Re-running is deterministic: identical bytes, identical hashes.
 
 NOTE on honesty:
   - v0.1 uses REAL data (ECB euro reference rates + UN WPP 2024 population).
-  - v0.2 uses REAL data too: World Bank PA.NUS.PPP (ICP, year PPP_YEAR) for
-    USD/CNY/JPY/GBP/INR. The World Bank publishes no single Euro-area PA.NUS.PPP
+  - v0.2 uses REAL data too: World Bank PA.NUS.PPP (year PPP_YEAR, WDI release
+    of April 2026) for USD/CNY/JPY/GBP/INR. Its generated text calls them
+    "ICP 2024", which is wrong (docs/AUDIT.md, 2026-10-26: no ICP 2024 results
+    exist; the values are ICP 2021 extrapolations or Eurostat-OECD annual PPPs);
+    the text is kept because published files are never rewritten. The World
+    Bank publishes no single Euro-area PA.NUS.PPP
     value, so the euro-area factor is a population-weighted blend of the 20
     euro-area members' WB values -- a contestable choice (SPEC.md section 10)
     documented in the vintage's SOURCES.md.
@@ -96,11 +100,13 @@ EURO_AREA_MEMBERS = [
     ("Slovakia", "5451342"), ("Finland", "5621739"),
 ]
 
-# PPP reference year (World Bank PA.NUS.PPP / ICP round).
+# PPP reference year of World Bank PA.NUS.PPP (not an ICP benchmark year: see
+# docs/AUDIT.md, 2026-10-26).
 PPP_YEAR = "2024"
 
 # World Bank PA.NUS.PPP -- PPP conversion factor, GDP (LCU per international $),
-# ICP, reference year 2024 -- transcribed exactly as published (full digits).
+# reference year 2024, WDI release of April 2026 -- transcribed exactly as
+# published (full digits). v0.2 only; later vintages read data/sources/.
 #   https://data.worldbank.org/indicator/PA.NUS.PPP   (CC BY-4.0)
 # EUR is filled in below from euro_area_ppp(): the World Bank publishes NO single
 # Euro-area PA.NUS.PPP value, so the euro-area factor is a population-weighted

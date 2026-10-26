@@ -336,8 +336,12 @@ Regenerate or check them with `python3 make_vintages.py [--verify]`.
   independently of the live feed.
 - **`v0.2-ppp-2026-05-15` (REAL).** Population weights with a PPP valuation leg
   (§2.3), read in international dollars. Inputs are real and named: UN WPP 2024,
-  an ECB nominal-FX baseline, and **World Bank `PA.NUS.PPP` (ICP 2024)** for
-  USD/CNY/JPY/GBP/INR (`1 openunit = 2.848010 international dollars`). The World
+  an ECB nominal-FX baseline, and **World Bank `PA.NUS.PPP` for 2024** for
+  USD/CNY/JPY/GBP/INR (`1 openunit = 2.848010 international dollars`). The
+  vintage labels these values "ICP 2024"; that is wrong: no ICP 2024 results
+  exist yet, and WDI's 2024 values are the ICP 2021 benchmark extrapolated by
+  the World Bank (China, India) or Eurostat-OECD annual PPPs (Japan, United
+  Kingdom, euro-area members); see `docs/AUDIT.md` (2026-10-26). The World
   Bank publishes **no single Euro-area `PA.NUS.PPP` value**, so the euro-area
   factor is a **population-weighted blend** of the 20 member states,
   `ppp(euro area) = Σ_i pop_i·ppp_i / Σ_i pop_i`, using UN WPP 2024 populations.
@@ -384,9 +388,11 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
 ## 9. Roadmap
 
 - Additional real pinned vintages over time (rolling baseline/valuation dates,
-  and new ICP years for the PPP leg as the World Bank publishes them; ICP 2024
-  is currently the latest year for which every basket economy and euro-area
-  member has a value).
+  and new PPP reference years as the World Bank publishes them). 2024 was the
+  latest `PA.NUS.PPP` year with a value for every basket economy and euro-area
+  member when checked on 2026-06-10 (`docs/AUDIT.md`). Those 2024 values are
+  not ICP benchmark values: the next ICP benchmark, ICP 2024, has not been
+  released, and WDI will replace its extrapolations when it is.
 - ✅ A published-artifact **format standard** (`openunit-artifact-1`, see
   `ARTIFACT_FORMAT.md` §9) and a **minimal third-party verifier**
   (`verify_independent.py`, engine-free, stdlib-only).
