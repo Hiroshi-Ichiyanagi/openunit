@@ -5,12 +5,12 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Worldyard is a specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
-## [0.4.0] — YYYY-MM-DD
+## [0.4.0] — 2026-10-26
 
 ### Renamed: openunit is now Worldyard
 
 - **Project, distribution, module and command renamed to `worldyard`**
-  (`pyproject.toml` name `worldyard`, version `0.4.0.dev0`; engine module
+  (`pyproject.toml` name `worldyard`, version `0.4.0`; engine module
   `worldyard.py`; console script `worldyard`). Entries for 0.3.0 and earlier
   below keep the old names.
 - **Nothing that was published changes.** The method name is part of every
