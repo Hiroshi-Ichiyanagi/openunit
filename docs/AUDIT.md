@@ -258,7 +258,8 @@ v0.2's 2024 values is an ICP benchmark value.**
 
 **Nothing published was rewritten.** v0.2's files and hashes stay as they are
 and still verify. `data/vintages.json` gives v0.2 two new warnings,
-`PPP_LABEL` and `PPP_REVISED`.
+`PPP_LABEL` and `PPP_REVISED`; the corrected PPP vintage is
+`v0.4-ppp-unwpp-2026-05-15`.
 
 Sources (all read 2026-10-26):
 
@@ -272,7 +273,9 @@ Sources (all read 2026-10-26):
   <https://api.worldbank.org/v2/sources/2/series/PA.NUS.PPP/metadata?format=json>
 - Extrapolation method:
   <https://datahelpdesk.worldbank.org/knowledgebase/articles/665452-how-do-you-extrapolate-the-ppp-conversion-factors>
-- 2024 values with footnotes:
+- 2024 values with footnotes (the response is committed verbatim as
+  `data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json`, sha256 `b4db34d4…ed0d`,
+  and used by `v0.4-ppp-unwpp-2026-05-15`):
   `https://api.worldbank.org/v2/country/<26 economies + EMU>/indicator/PA.NUS.PPP?date=2024&format=json&footnote=y&per_page=100`
 - Earlier releases: `https://api.worldbank.org/v2/sources/57/country/<codes>/series/PA.NUS.PPP/version/202604/time/YR2024?format=json`
   (and `202607`)

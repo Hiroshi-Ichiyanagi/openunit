@@ -19,5 +19,11 @@ Department of Economic and Social Affairs, Population Division (2024). World
 Population Prospects 2024, Online Edition. Copyright (c) 2024 by United Nations,
 made available under CC BY 3.0 IGO (http://creativecommons.org/licenses/by/3.0/igo/).
 Changes: 26 rows selected; thousands converted to persons in an added column.
-The United Nations does not endorse openunit. The Apache License above applies
+The United Nations does not endorse openunit.
+
+data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json is a World Bank API
+response (World Development Indicators, indicator PA.NUS.PPP, 2024), retrieved
+2026-10-26, made available by the World Bank under CC BY 4.0
+(https://datacatalog.worldbank.org/public-licenses#cc-by). It is unmodified.
+The World Bank does not endorse openunit. The Apache License above applies
 to the code, not to third-party data.

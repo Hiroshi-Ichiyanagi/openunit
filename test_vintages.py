@@ -5,8 +5,9 @@ test_vintages.py -- the pinned vintages under data/ must reproduce exactly,
 the verified v0 sample must keep its historical hash (backward compatibility),
 the v0.1 nominal FX must be the exact quotient of the raw ECB rates, published
 vintage files must stay byte-identical, v0.3-unwpp must be exactly the UN
-extract on v0.1's FX, and the vintage registry (data/vintages.json) must be
-consistent with the specs it describes.
+extract on v0.1's FX, v0.4-ppp-unwpp must be v0.3's populations on v0.2's FX
+with the pinned World Bank PPP response, and the vintage registry
+(data/vintages.json) must be consistent with the specs it describes.
 
 Standalone (`python3 test_vintages.py`) and pytest compatible.
 """
@@ -36,6 +37,8 @@ VINTAGE_ARTIFACT_HASH = {
         "sha256:566c95c1753dbcaa70bbfd58c295ced2117d4907d4d7aabb992d68a93f10b97a",
     "v0.3-unwpp-2026-05-15":
         "sha256:0fe13c839711bd60c3f87df59c84b47517bbaf4e8141d52dee5d86c42666b7af",
+    "v0.4-ppp-unwpp-2026-05-15":
+        "sha256:db4cd6e15afa6346f76dfee49125ba00151d52d4e5bb917e78ddc9be98a5221d",
 }
 
 # Published vintages are never rewritten (SPEC.md, "Corrections and
@@ -194,6 +197,131 @@ def test_v0_3_supersedes_v0_1():
     codes = [r["code"] for r in sup["reasons"]]
     assert codes == ["EURO_AREA_MEMBERSHIP", "POPULATION_VIA_REPUBLISHER",
                      "POPULATION_MISMATCH"]
+
+
+V0_4 = "v0.4-ppp-unwpp-2026-05-15"
+
+
+def _v0_4():
+    d = os.path.join(HERE, "data", V0_4)
+    return _load(os.path.join(d, "spec.json")), _load(os.path.join(d, "artifact.json"))
+
+
+def _wb_response(spec):
+    """The pinned World Bank response, numbers kept as their exact tokens."""
+    p = spec["provenance"]["ppp"]
+    with open(os.path.join(HERE, p["response_file"]), "rb") as fh:
+        raw = fh.read()
+    assert hashlib.sha256(raw).hexdigest() == p["response_sha256"]
+    assert len(raw) == int(p["response_bytes"])
+    head, rows = json.loads(raw.decode("utf-8"), parse_float=str, parse_int=str)
+    assert head["lastupdated"] == p["wdi_last_updated"]
+    return {r["countryiso3code"]: r for r in rows}
+
+
+def test_v0_4_populations_and_members_are_v0_3s():
+    """v0.4 uses exactly v0.3-unwpp's UN populations and 21-member euro area."""
+    spec4, _ = _v0_4()
+    spec3, _ = _v0_3()
+    assert [(e["code"], e["population"]) for e in spec4["basket"]] == \
+        [(e["code"], e["population"]) for e in spec3["basket"]]
+    ea4 = dict(spec4["provenance"]["euro_area"])
+    assert ea4.pop("same_as") == "v0.3-unwpp-2026-05-15"
+    assert ea4 == spec3["provenance"]["euro_area"]
+    pop4 = dict(spec4["provenance"]["population"])
+    assert pop4.pop("same_as") == "v0.3-unwpp-2026-05-15"
+    assert pop4 == spec3["provenance"]["population"]
+
+
+def test_v0_4_ppp_is_the_pinned_world_bank_response():
+    """Every PPP factor is the verbatim token of the pinned response; the
+    euro-area factor is the population-weighted blend of the 21 members,
+    recomputed here from the response and the UN extract; the valuation leg
+    is 1/factor; the World Bank publishes no euro-area value."""
+    import make_vintages as mv
+    spec, _ = _v0_4()
+    wb = _wb_response(spec)
+    un = mv.load_un_extract()
+    assert wb["EMU"]["value"] is None
+    members = spec["provenance"]["euro_area"]["members_iso3"]
+    with localcontext() as ctx:
+        ctx.prec = 50
+        ctx.rounding = ROUND_HALF_EVEN
+        num = sum(Decimal(un[i]["population_persons"]) * Decimal(wb[i]["value"])
+                  for i in members)
+        den = sum(Decimal(un[i]["population_persons"]) for i in members)
+        blend = num / den
+        for e in spec["basket"]:
+            if e["code"] == "EUR":
+                assert e["ppp_factor_lcu_per_intl_usd"] == str(blend)
+            else:
+                iso = mv.ISO3_FOR_CCY[e["code"]]
+                assert e["ppp_factor_lcu_per_intl_usd"] == wb[iso]["value"]
+            assert Decimal(e["fx_valuation_usd_per_unit"]) == \
+                Decimal(1) / Decimal(e["ppp_factor_lcu_per_intl_usd"])
+    assert "BGR" in members and len(members) == 21
+
+
+def test_v0_4_ppp_labels_follow_the_world_bank():
+    """Labels come from the World Bank's own footnotes: no footnote = an ICP
+    2021 extrapolation (China, India); 'Eurostat-OECD annual PPP' = that
+    programme's annual PPP; the US is the base. Nothing claims ICP 2024."""
+    import make_vintages as mv
+    spec, _ = _v0_4()
+    wb = _wb_response(spec)
+    for e in spec["basket"]:
+        assert "ICP 2024" not in e["ppp_basis"]
+        if e["code"] == "EUR":
+            assert "blend" in e["ppp_basis"] and "Eurostat-OECD" in e["ppp_basis"]
+            continue
+        iso = mv.ISO3_FOR_CCY[e["code"]]
+        if iso == "USA":
+            assert e["ppp_basis"].startswith("1 by definition")
+        elif wb[iso]["footnote"] == "":
+            assert e["ppp_basis"].startswith("ICP 2021 benchmark, extrapolated")
+            assert iso in ("CHN", "IND")
+        else:
+            assert wb[iso]["footnote"] == "Eurostat-OECD annual PPP"
+            assert e["ppp_basis"].startswith("Eurostat-OECD")
+    for iso in spec["provenance"]["euro_area"]["members_iso3"]:
+        assert wb[iso]["footnote"] == "Eurostat-OECD annual PPP", iso
+    assert spec["provenance"]["ppp"]["label"].startswith("Not ICP 2024")
+
+
+def test_v0_4_nominal_fx_is_v0_2s():
+    """The baseline leg is the same ECB nominal FX (2026-05-15) as v0.2."""
+    spec4, _ = _v0_4()
+    spec2 = _load(os.path.join(HERE, "data", "v0.2-ppp-2026-05-15", "spec.json"))
+    assert [(e["code"], e["fx_baseline_usd_per_unit"]) for e in spec4["basket"]] \
+        == [(e["code"], e["fx_baseline_usd_per_unit"]) for e in spec2["basket"]]
+
+
+def test_v0_4_supersedes_v0_2():
+    spec4, _ = _v0_4()
+    art2 = _load(os.path.join(HERE, "data", "v0.2-ppp-2026-05-15", "artifact.json"))
+    (sup,) = spec4["supersedes"]
+    assert sup["vintage"] == "v0.2-ppp-2026-05-15"
+    assert sup["artifact_hash"] == art2["artifact_hash"]
+    assert [r["code"] for r in sup["reasons"]] == [
+        "EURO_AREA_MEMBERSHIP", "POPULATION_VIA_REPUBLISHER",
+        "POPULATION_MISMATCH", "PPP_LABEL", "PPP_REVISED"]
+
+
+def test_v0_4_input_states_resolve():
+    """The recorded input states are what resolve_input returns under the
+    declared maximum ages, and none is unavailable."""
+    spec, _ = _v0_4()
+    st = spec["provenance"]["input_states"]
+    for key in ("ecb_fx", "population", "ppp"):
+        s = st[key]
+        r = openunit.resolve_input(
+            st["target"],
+            {"observations": [{"date": s["observation_date"], "value": "1"}]},
+            openunit.DECLARED_MAX_AGE_DAYS[s["source"]])
+        assert r["state"] == s["state"] != "unavailable", key
+        assert r["age_days"] == s["age_days"] and r["flags"] == s["flags"], key
+        assert s["max_age_days"] == str(openunit.DECLARED_MAX_AGE_DAYS[s["source"]])
+    assert st["ecb_fx"]["state"] == "ok"
 
 
 def test_vintage_registry_is_consistent():

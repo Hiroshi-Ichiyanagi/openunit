@@ -81,7 +81,10 @@ set the valuation leg to a PPP rate (international dollars per unit,
 `= 1 / PPP_factor`). The unit is then read in international dollars, and
 `realized_weight_at_valuation` shows how real purchasing power redistributes
 effective weight toward lower-price economies. This is the interpretation used
-by the bundled v0.2 vintage.
+by the bundled v0.2 vintage and by its correction, `v0.4-ppp-unwpp` (method
+version `v0.4`: the same formulas, under the v0.3 input domain, with every input
+resolved under "Data states and fallbacks" and the resolution recorded in the
+spec).
 
 ## 3. Determinism
 
@@ -248,7 +251,8 @@ never interpolated or averaged, and no undeclared source is substituted.
   stricter maximum age (it is then hashed with the spec) but never a looser one
   without saying so in its `SOURCES.md`. The shipped vintages use ECB rates on
   their exact dates (age 0), WPP 2024 (547 days before their 2026-01-09
-  baseline) and, for v0.2, `PA.NUS.PPP` 2024 (683 days before 2026-05-15).
+  baseline; 673 days before 2026-05-15, the weight date of v0.2 and v0.4) and,
+  for v0.2 and v0.4, `PA.NUS.PPP` 2024 (683 days before 2026-05-15).
 - **Suspended or unrepresentative rate.** When the publisher suspends a rate
   because it can no longer set a representative one — the ECB has published no
   euro reference rate for the Russian rouble after 1 March 2022 — the input is
@@ -293,9 +297,12 @@ never interpolated or averaged, and no undeclared source is substituted.
   until a new vintage declares how to proceed.
 
 A spec may record how each input was resolved in optional, descriptive keys
-(hashed like any other extra key; they change no artifact field). An entry
-without such keys asserts that each of its inputs was observed directly on its
-date (`ok`), which is true of every shipped vintage.
+(hashed like any other extra key; they change no artifact field). A spec
+without such keys asserts that each of its inputs is the latest observation on
+or before its date and within the maximum age: for the shipped vintages, FX
+rates on their exact dates (`ok`) and population and PPP inputs `stale` by the
+ages given above. `v0.4-ppp-unwpp` records its resolution explicitly
+(`provenance.input_states`, computed with `resolve_input`).
 
 ## Corrections and supersession
 
@@ -317,10 +324,10 @@ date (`ok`), which is true of every shipped vintage.
 - **A superseded vintage still verifies.** Verification proves that an artifact
   reproduces from its spec, not that the spec was right. Anyone relying on a
   vintage should check its entry in `data/vintages.json`.
-- **Known issues without a correction are warnings.** A vintage with a known
-  problem but no corrected successor stays `current` and carries the warning
-  (v0.2 carries the same 20-member euro-area warning as v0.1 until a corrected
-  PPP vintage is issued).
+- **Known issues are warnings.** A vintage with a known problem but no
+  corrected successor stays `current` and carries the warning; a superseded
+  vintage keeps its warnings. Warnings can also describe a current vintage's
+  known limits (e.g. `PPP_EXTRAPOLATED` on `v0.4-ppp-unwpp`).
 
 ## 6. Reference vintages
 
@@ -360,6 +367,18 @@ Regenerate or check them with `python3 make_vintages.py [--verify]`.
   Greece and Slovenia differ by one person each. v0.1 is not rewritten; the
   correction is recorded in v0.3's hashed spec (`supersedes`) and in
   `data/vintages.json` (`superseded_by`, warnings).
+- **`v0.4-ppp-unwpp-2026-05-15` (REAL; supersedes v0.2).** v0.2's PPP-aware
+  method (§2.3) with v0.3-unwpp's populations (UN primary file, euro area of 21
+  members, in the headcount and in the PPP blend) and the same ECB nominal FX
+  as v0.2. The PPP factors are World Bank `PA.NUS.PPP` for 2024 from one API
+  response committed verbatim
+  (`data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json`, CC BY 4.0, sha256
+  part of the spec), labelled as the World Bank labels them: the ICP 2021
+  benchmark extrapolated to 2024 (China, India) and Eurostat-OECD annual PPPs
+  (Japan, United Kingdom, euro-area members). `1 openunit = 2.845044
+  international dollars` (v0.2: 2.848010). Reasons for the correction:
+  Bulgaria's membership, the population source, v0.2's "ICP 2024" label, and
+  the World Bank's July 2026 revisions of five of v0.2's values.
 
 ## 7. Anchoring
 
@@ -373,8 +392,9 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
 ## 8. Limitations
 
 - The bundled v0 sample and all illustrative inputs are **non-authoritative**.
-- The euro area has **no single published World Bank PPP factor**; v0.2 derives
-  it as a population-weighted blend of the member states. That aggregation is a
+- The euro area has **no single published World Bank PPP factor**; v0.2 and
+  v0.4 derive it as a population-weighted blend of the member states (20 in
+  v0.2, 21 in v0.4). That aggregation is a
   **contestable value choice** (§10), made explicit in the vintage's
   `SOURCES.md` rather than hidden — not a World Bank aggregate.
 - The basket is a **subset** of currencies; coverage is a policy choice
@@ -383,6 +403,11 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
   hashed inputs. Provenance lives in each vintage's `SOURCES.md`.
 - Nominal-FX vintages (v0.1) understate real command over goods in lower-price
   economies; that is what the PPP leg (v0.2) addresses.
+- PPP factors for years after the latest ICP benchmark (2021) are provisional:
+  the World Bank extrapolates them for most economies and revises them (it
+  revised China and India between its April and July 2026 releases) and will
+  replace them when ICP 2024 results are published. A vintage pins the values
+  of one release and names it.
 - "Equal" weighting is **not** a neutral fact (see §10).
 
 ## 9. Roadmap
@@ -414,7 +439,9 @@ publishes no single Euro-area `PA.NUS.PPP` value, openunit blends the 20 member
 states **weighted by population** rather than by GDP. That is the same value
 choice applied one level down — recorded in the vintage's `SOURCES.md` with the
 full member table and formula so a GDP-weighted (or any other) alternative can
-be argued against the exact numbers.
+be argued against the exact numbers. `v0.4-ppp-unwpp` makes the same choice
+for its 21 members (factor `0.638144`); its GDP-weighted alternative is not
+computed, because Bulgaria's GDP was not downloaded.
 
 **Sensitivity (on the record).** The two weightings yield:
 population-weighted euro-area `PA.NUS.PPP` `= 0.642950` (**shipped**) vs.

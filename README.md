@@ -76,7 +76,7 @@ No third-party dependencies — Python **3.10+** (as declared in
 
 ## The reference vintages
 
-Three pinned vintages ship under `data/`. Each has a `spec.json` (the hashed
+Four pinned vintages ship under `data/`. Each has a `spec.json` (the hashed
 input), an `artifact.json` (the built, self-verifying result), and a
 `SOURCES.md` (full provenance: URLs, dates, raw numbers, and the exact
 conversion used). `data/vintages.json` records which vintage supersedes which,
@@ -118,8 +118,9 @@ Bank `PA.NUS.PPP`** for 2024 on the valuation leg, so the unit is read in
 
 - provenance note: as in v0.1, populations come from Worldometer's
   republication of UN WPP 2024 and the euro area has 20 members (Bulgaria
-  missing); `data/vintages.json` carries these warnings. No corrected PPP
-  vintage has been issued yet.
+  missing); `data/vintages.json` carries these warnings. **Superseded by
+  `v0.4-ppp-unwpp-2026-05-15`**; this vintage is kept unchanged and still
+  verifies.
 - PA.NUS.PPP 2024 for USD/CNY/JPY/GBP/INR, transcribed exactly as published. The
   World Bank publishes **no single Euro-area** `PA.NUS.PPP` value, so the
   euro-area factor is a **population-weighted blend** of the 20 members' WB
@@ -146,6 +147,30 @@ committed as `data/sources/un_wpp2024_population_2026.csv` (CC BY 3.0 IGO).
 - `artifact_hash` `sha256:0fe13c83…b7af`
 - population-pinned weights: India 39.01 %, China 37.33 %, euro area 9.36 %,
   United States 9.22 %, Japan 3.23 %, United Kingdom 1.85 %
+
+### `v0.4-ppp-unwpp-2026-05-15` — **REAL DATA (PPP, UN primary file)** — supersedes v0.2
+
+Method v0.2's PPP valuation leg (read in **international dollars**) with
+v0.3-unwpp's populations (UN Population Division's own WPP 2024 file, euro
+area of **21** members) and World Bank `PA.NUS.PPP` for reference year 2024,
+taken from one small API response committed verbatim as
+`data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json` (CC BY 4.0, pinned by
+sha256). The nominal-FX baseline is the same ECB data as v0.2.
+
+- **labelled as the World Bank labels it:** China and India are the ICP 2021
+  benchmark extrapolated to 2024 by the World Bank; Japan, the United Kingdom
+  and the 21 euro-area members are Eurostat-OECD annual PPPs; US = 1. They are
+  not ICP 2024 values (none have been released) and may be revised again
+  (`data/vintages.json` warning `PPP_EXTRAPOLATED`).
+- the euro-area factor is again a population-weighted blend of the members
+  (the World Bank publishes no euro-area value): 0.638144 (v0.2: 0.642950)
+- **1 openunit = 2.845044 international dollars** (v0.2: 2.848010; −0.104 %:
+  −0.044 % from the World Bank's July 2026 revisions, the rest from adding
+  Bulgaria; the switch to the UN file is negligible)
+- `artifact_hash` `sha256:db4cd6e1…221d`
+- realized weight at PPP: India 64.34 %, China 25.35 %, euro area 4.43 %,
+  United States 3.24 %, Japan 1.91 %, United Kingdom 0.73 % (population
+  shares as in v0.3)
 
 ## Command-line interface
 
@@ -235,7 +260,9 @@ data/
   v0.1-2026-05-15/          REAL vintage: spec.json, artifact.json, SOURCES.md
   v0.2-ppp-2026-05-15/      REAL PPP vintage: World Bank PA.NUS.PPP 2024
   v0.3-unwpp-2026-05-15/    REAL vintage: UN primary population file; supersedes v0.1
-  sources/                  committed source extracts (UN WPP 2024 rows) + SOURCES.md
+  v0.4-ppp-unwpp-2026-05-15/ REAL PPP vintage on the UN primary file; supersedes v0.2
+  sources/                  committed source extracts (UN WPP 2024 rows, World Bank
+                            PA.NUS.PPP 2024 response) + SOURCES.md
   vintages.json             registry: supersedes / superseded_by links, warnings
 test_determinism_guard.py   4 determinism invariants (standalone + pytest)
 test_vintages.py            backward-compat hash, pinned vintage hashes, FX integrity

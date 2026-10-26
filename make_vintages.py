@@ -35,12 +35,19 @@ NOTE on honesty:
     rewritten; v0.3-unwpp declares that it supersedes v0.1 (SPEC.md,
     "Corrections and supersession").
 
+  - v0.4-ppp-unwpp is v0.2's PPP method on v0.3-unwpp's populations (21
+    euro-area members), with World Bank PA.NUS.PPP 2024 read from a pinned API
+    response under data/sources/ and labelled as the World Bank labels it (ICP
+    2021 extrapolations for China and India, Eurostat-OECD annual PPPs for the
+    others). It declares that it supersedes v0.2.
+
     python3 make_vintages.py --check-un-wpp RAW.csv.gz
         re-extracts the committed UN population CSV from the raw UN file
         (sha256-checked) and reports whether it is byte-identical.
 """
 
 import os
+import re
 import csv
 import gzip
 import json
@@ -1172,6 +1179,619 @@ def check_un_wpp(raw_path):
     return 0
 
 
+# ---------------------------------------------------------------------------
+# v0.4-ppp-unwpp -- REAL: v0.2's PPP-aware method (nominal FX baseline, PPP
+#                   valuation leg) on v0.3-unwpp's populations (UN primary
+#                   file, 21-member euro area), with World Bank PA.NUS.PPP for
+#                   2024 read from a pinned API response and labelled the way
+#                   the World Bank labels it (docs/AUDIT.md, 2026-10-26).
+#                   Supersedes v0.2 (never rewritten).
+# ---------------------------------------------------------------------------
+
+# The World Bank API response is committed verbatim (CC BY 4.0) and pinned by
+# sha256. Its numbers are JSON number tokens; they are read as the exact token
+# strings (json parse_float/parse_int=str), never as floats.
+WB_PPP_RAW = {
+    "publisher": "World Bank",
+    "database": "World Development Indicators (WDI)",
+    "indicator": "PA.NUS.PPP",
+    "indicator_name": "PPP conversion factor, GDP (LCU per international $)",
+    "reference_year": "2024",
+    "url": ("https://api.worldbank.org/v2/country/AUT;BEL;BGR;CHN;CYP;DEU;EMU;"
+            "ESP;EST;FIN;FRA;GBR;GRC;HRV;IND;IRL;ITA;JPN;LTU;LUX;LVA;MLT;NLD;"
+            "PRT;SVK;SVN;USA/indicator/PA.NUS.PPP?date=2024&format=json&"
+            "footnote=y&per_page=100"),
+    "retrieved": "2026-10-26",
+    "bytes": "7316",
+    "sha256": "b4db34d4ee9bfef0aa0efbc116bd587cbd480f9cfbfa34c85c845f42fe7aed0d",
+    "wdi_last_updated": "2026-10-08",
+    "licence": "CC BY 4.0",
+    "licence_url": "https://datacatalog.worldbank.org/public-licenses#cc-by",
+    "indicator_page": "https://data.worldbank.org/indicator/PA.NUS.PPP",
+}
+WB_PPP_REL = "data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json"
+WB_FOOTNOTE_EUROSTAT_OECD = "Eurostat-OECD annual PPP"
+# Economies whose 2024 value WDI extrapolates from the ICP 2021 benchmark (no
+# footnote in the API); every other economy here carries the Eurostat-OECD
+# footnote. A refetch that changes this mapping is refused, not relabelled.
+WB_EXTRAPOLATED_ISO3 = ("CHN", "IND")
+_WB_NUMBER = re.compile(r"[0-9]+(\.[0-9]+)?\Z")
+
+# Where the label comes from (all read 2026-10-26; docs/AUDIT.md).
+PPP_LABEL_SOURCES = [
+    "https://www.worldbank.org/en/programs/icp",
+    "https://www.worldbank.org/en/programs/icp/faq",
+    "https://api.worldbank.org/v2/sources/2/series/PA.NUS.PPP/metadata?format=json",
+    "https://datahelpdesk.worldbank.org/knowledgebase/articles/"
+    "665452-how-do-you-extrapolate-the-ppp-conversion-factors",
+]
+PPP_BASIS = {
+    "extrapolated": ("ICP 2021 benchmark, extrapolated to 2024 by the World "
+                     "Bank (WDI; change in the GDP deflator relative to the "
+                     "United States)"),
+    "eurostat_oecd": ("Eurostat-OECD PPP Programme annual PPP for 2024, as "
+                      "published in WDI"),
+    "base": ("1 by definition (the international dollar has the purchasing "
+             "power of the US dollar in the United States)"),
+    "blend": ("population-weighted blend, computed here, of the %d euro-area "
+              "members' Eurostat-OECD annual PPPs for 2024 as published in "
+              "WDI; not a World Bank value"),
+}
+PPP_OBSERVATION_DATE = "2024-07-01"     # 1 July of the reference year (SPEC)
+WPP_2024_RELEASED = "2024-07-11"        # UN DESA launch of WPP 2024
+WPP_2024_RELEASE_SOURCE = ("https://www.un.org/development/desa/pd/"
+                           "world-population-prospects-2024")
+
+V0_2_ID = "v0.2-ppp-%s" % ECB["valuation"]["date"]
+V0_4_ID = "v0.4-ppp-unwpp-%s" % ECB["valuation"]["date"]
+
+
+def load_wb_ppp(path=None):
+    """Load and integrity-check the committed World Bank response.
+    Returns {iso3: {"name", "value" (exact token string or None), "footnote"}}."""
+    path = path or os.path.join(HERE, WB_PPP_REL)
+    with open(path, "rb") as fh:
+        raw = fh.read()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != WB_PPP_RAW["sha256"] or len(raw) != int(WB_PPP_RAW["bytes"]):
+        raise ValueError("%s sha256 %s / %d bytes != pinned %s / %s bytes"
+                         % (WB_PPP_REL, digest, len(raw), WB_PPP_RAW["sha256"],
+                            WB_PPP_RAW["bytes"]))
+    head, rows = json.loads(raw.decode("utf-8"), parse_float=str,
+                            parse_int=str)
+    if head.get("sourceid") != "2" or head.get("pages") != "1" or \
+            head.get("lastupdated") != WB_PPP_RAW["wdi_last_updated"] or \
+            head.get("total") != str(len(rows)):
+        raise ValueError("unexpected response header: %r" % head)
+    out = {}
+    for r in rows:
+        iso = r["countryiso3code"]
+        if r["indicator"]["id"] != WB_PPP_RAW["indicator"] or \
+                r["date"] != WB_PPP_RAW["reference_year"]:
+            raise ValueError("unexpected row: %r" % r)
+        if iso in out:
+            raise ValueError("duplicate row for %s" % iso)
+        v = r["value"]
+        if v is not None and not (isinstance(v, str) and _WB_NUMBER.match(v)):
+            raise ValueError("unexpected value token for %s: %r" % (iso, v))
+        out[iso] = {"name": r["country"]["value"], "value": v,
+                    "footnote": r["footnote"]}
+    want = set(ISO3_FOR_CCY.values()) | {iso for iso, _ in EURO_AREA_2026}
+    if set(out) != want | {"EMU"}:
+        raise ValueError("response covers %s, expected %s"
+                         % (sorted(out), sorted(want | {"EMU"})))
+    if out["EMU"]["value"] is not None:
+        raise ValueError("the World Bank now publishes a euro-area value; "
+                         "the member blend must be reconsidered")
+    for iso in want:
+        if out[iso]["value"] is None:
+            raise ValueError("no 2024 value for %s" % iso)
+        extrapolated = iso in WB_EXTRAPOLATED_ISO3
+        if (out[iso]["footnote"] == "") != extrapolated or \
+                (not extrapolated and
+                 out[iso]["footnote"] != WB_FOOTNOTE_EUROSTAT_OECD):
+            raise ValueError("unexpected footnote for %s: %r"
+                             % (iso, out[iso]["footnote"]))
+    if out["USA"]["value"] != "1":
+        raise ValueError("US PPP factor is not 1: %r" % out["USA"]["value"])
+    return out
+
+
+def ppp_basis(iso):
+    if iso == "USA":
+        return PPP_BASIS["base"]
+    if iso in WB_EXTRAPOLATED_ISO3:
+        return PPP_BASIS["extrapolated"]
+    return PPP_BASIS["eurostat_oecd"]
+
+
+def ppp_blend(member_pops, member_ppps):
+    """sum(pop_i * ppp_i) / sum(pop_i), exact at precision 50."""
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        num = sum((Decimal(p) * Decimal(f)
+                   for p, f in zip(member_pops, member_ppps)), Decimal(0))
+        den = sum((Decimal(p) for p in member_pops), Decimal(0))
+        return num / den
+
+
+def ppp_artifact(pop_for, ppp_for, method_version="v0.4"):
+    """Artifact for v0.2's method (nominal FX on the valuation date as the
+    baseline leg, 1/PPP as the valuation leg) with the given populations and
+    PPP factors. Used for the v0.4 build and its comparison tables."""
+    basket = []
+    for c in BASKET:
+        with localcontext() as ctx:
+            ctx.prec = PREC
+            ctx.rounding = ROUND
+            ppp_rate = Decimal(1) / Decimal(ppp_for[c])
+        basket.append({
+            "code": c, "name": CCY_NAME[c], "population": pop_for[c],
+            "fx_baseline_usd_per_unit": str(usd_per_unit(c, "valuation")),
+            "fx_valuation_usd_per_unit": str(ppp_rate),
+        })
+    spec = {
+        "method": "openunit", "method_version": method_version,
+        "numeraire": "USD",
+        "weight_vintage": {"label": "comparison", "basis": "population_share"},
+        "basket": basket,
+    }
+    return openunit.build_artifact(spec)
+
+
+def v0_2_ppp_by_iso3():
+    """v0.2's transcribed PA.NUS.PPP values (WDI, April 2026) by ISO3."""
+    out = {iso: PPP_WB[c] for c, iso in ISO3_FOR_CCY.items()}
+    for name, iso in V0_1_MEMBER_ISO3.items():
+        out[iso] = EURO_PPP_2024[name]
+    return out
+
+
+def v0_4_inputs():
+    un, pop_for, members, ea = v0_3_inputs()
+    wb = load_wb_ppp()
+    ppp_for = {c: wb[iso]["value"] for c, iso in ISO3_FOR_CCY.items()}
+    ppp_for["EUR"] = str(ppp_blend([p for _, _, p in members],
+                                   [wb[iso]["value"] for iso, _, _ in members]))
+    return un, pop_for, members, ea, wb, ppp_for
+
+
+def v0_4_input_states(pop_for, ppp_for):
+    """Resolve every input under SPEC.md 'Data states and fallbacks' (the
+    engine's resolve_input) at the vintage's single date, and return the
+    summary recorded in the spec. Refuses to build if any input is
+    unavailable or if inputs of one kind resolve differently."""
+    target = ECB["valuation"]["date"]
+    ages = openunit.DECLARED_MAX_AGE_DAYS
+    kinds = {
+        "ecb_fx": ("ECB euro reference rates", target,
+                   [ECB["valuation"]["per_eur"][c]
+                    for c in ("USD", "JPY", "GBP", "CNY", "INR")]),
+        "population": ("UN World Population Prospects", WPP_2024_RELEASED,
+                       [pop_for[c] for c in BASKET]),
+        "ppp": ("World Bank PA.NUS.PPP", PPP_OBSERVATION_DATE,
+                [ppp_for[c] for c in BASKET if c != "EUR"]),
+    }
+    out = {"rule": "SPEC.md, 'Data states and fallbacks' (resolve_input)",
+           "target": target}
+    for key, (source, obs_date, values) in kinds.items():
+        results = []
+        for v in values:
+            r = openunit.resolve_input(
+                target, {"observations": [{"date": obs_date, "value": v}]},
+                ages[source])
+            if r["state"] == "unavailable":
+                raise ValueError("%s input unavailable: %r" % (key, r))
+            results.append((r["state"], r["observation_date"], r["age_days"],
+                            tuple(r["flags"])))
+        if len(set(results)) != 1:
+            raise ValueError("%s inputs resolve differently: %r"
+                             % (key, results))
+        state, date, age, flags = results[0]
+        out[key] = {"source": source, "observation_date": date,
+                    "state": state, "age_days": age,
+                    "max_age_days": str(ages[source]), "flags": list(flags)}
+    out["population"]["observation_date_basis"] = (
+        "release of WPP 2024 (UN DESA, %s); the figures themselves refer to "
+        "1 July 2026" % WPP_2024_RELEASED)
+    out["ppp"]["observation_date_basis"] = "1 July of the reference year 2024"
+    return out
+
+
+def build_v0_4_ppp(persist=True):
+    un, pop_for, members, ea, wb, ppp_for = v0_4_inputs()
+    _v02_vid, _v02_spec, v02_art, _ = build_v0_2(persist=False)
+    _v03_vid, v03_spec, _v03_art, _ = build_v0_3_unwpp(persist=False)
+
+    mismatches = [(label, iso, old, new) for label, iso, old, new
+                  in v0_1_vs_un(un) if old != new]
+    v01_isos = set(V0_1_MEMBER_ISO3.values())
+    added = [(iso, name, p) for iso, name, p in members if iso not in v01_isos]
+    old_ppp = v0_2_ppp_by_iso3()
+    revised = []
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        for iso in sorted(old_ppp, key=lambda i: wb[i]["name"]):
+            if Decimal(old_ppp[iso]) != Decimal(wb[iso]["value"]):
+                revised.append((iso, wb[iso]["name"], old_ppp[iso],
+                                wb[iso]["value"]))
+
+    basket = []
+    for c in BASKET:
+        with localcontext() as ctx:
+            ctx.prec = PREC
+            ctx.rounding = ROUND
+            ppp_rate = Decimal(1) / Decimal(ppp_for[c])
+        basket.append({
+            "code": c,
+            "name": CCY_NAME[c],
+            "population": pop_for[c],
+            "fx_baseline_usd_per_unit": str(usd_per_unit(c, "valuation")),
+            "fx_valuation_usd_per_unit": str(ppp_rate),
+            "source_eur_per_unit_baseline":
+                ECB["valuation"]["per_eur"].get(c, "1"),
+            "ppp_factor_lcu_per_intl_usd": ppp_for[c],
+            "ppp_basis": (PPP_BASIS["blend"] % len(members) if c == "EUR"
+                          else ppp_basis(ISO3_FOR_CCY[c])),
+        })
+
+    population = dict(v03_spec["provenance"]["population"])
+    population["same_as"] = V0_3_ID
+    euro_area = dict(v03_spec["provenance"]["euro_area"])
+    euro_area["same_as"] = V0_3_ID
+
+    reasons = [{
+        "code": "EURO_AREA_MEMBERSHIP",
+        "detail": ("v0.2 counts 20 euro-area member states, in the headcount "
+                   "and in the PPP blend; %s joined the euro area on %s, so "
+                   "on v0.2's FX date (%s) it had %d members"
+                   % (", ".join(n for _, n, _ in added), BULGARIA_JOINED,
+                      ECB["valuation"]["date"], len(EURO_AREA_2026))),
+    }, {
+        "code": "POPULATION_VIA_REPUBLISHER",
+        "detail": ("v0.2 took the UN WPP 2024 figures from Worldometer's "
+                   "republication; this vintage reads the UN Population "
+                   "Division's own file (as %s)" % V0_3_ID),
+    }]
+    if mismatches:
+        reasons.append({
+            "code": "POPULATION_MISMATCH",
+            "detail": ("%d of v0.2's %d populations differ from the UN file: %s"
+                       % (len(mismatches), len(v0_1_vs_un(un)),
+                          "; ".join("%s %s (v0.2) vs %s (UN)"
+                                    % (label, old, new)
+                                    for label, _iso, old, new in mismatches))),
+        })
+    reasons.append({
+        "code": "PPP_LABEL",
+        "detail": ("v0.2 labels its PA.NUS.PPP 2024 values 'ICP 2024'; no ICP "
+                   "2024 results have been released (the latest ICP cycle is "
+                   "2021, released May 2024). The values are the ICP 2021 "
+                   "benchmark extrapolated by the World Bank (China, India) or "
+                   "Eurostat-OECD annual PPPs (Japan, United Kingdom, euro-area "
+                   "members); the United States is 1 by definition"),
+    })
+    if revised:
+        reasons.append({
+            "code": "PPP_REVISED",
+            "detail": ("v0.2's PA.NUS.PPP values are WDI's April 2026 release; "
+                       "this vintage uses the release last updated %s, in "
+                       "which %d of them differ: %s"
+                       % (WB_PPP_RAW["wdi_last_updated"], len(revised),
+                          "; ".join("%s %s -> %s" % (name, old, new)
+                                    for _iso, name, old, new in revised))),
+        })
+
+    spec = {
+        "method": "openunit",
+        "method_version": "v0.4",
+        "numeraire": "USD",
+        "weight_vintage": {
+            "label": "UN-WPP-2024 + WB-PPP-2024 (WDI %s)"
+                     % WB_PPP_RAW["wdi_last_updated"],
+            "basis": "population_share",
+            "frequency": "low; baseline=nominal FX, valuation=PPP "
+                         "(international $)",
+            "note": ("One person, one vote (population weights), read in "
+                     "international dollars: v0.2's method (SPEC sec 2.3) with "
+                     "the populations of %s (the UN Population Division's own "
+                     "WPP 2024 file; 21 euro-area members) and World Bank "
+                     "PA.NUS.PPP for reference year 2024. These PPPs are not "
+                     "ICP 2024 values: China and India are the ICP 2021 "
+                     "benchmark extrapolated by the World Bank; the others are "
+                     "Eurostat-OECD annual PPPs." % V0_3_ID),
+        },
+        "rounding": {"precision": PREC, "mode": "ROUND_HALF_EVEN", "display_dp": 6},
+        "provenance": {
+            "population": population,
+            "euro_area": euro_area,
+            "nominal_fx": {
+                "source": "European Central Bank, euro foreign exchange "
+                          "reference rates (units of currency per 1 EUR)",
+                "date": ECB["valuation"]["date"],
+                "url": "https://www.ecb.europa.eu/stats/eurofxref/"
+                       "eurofxref-daily.xml",
+                "conversion": "usd_per_unit(C) = (USD per EUR) / (C per EUR); "
+                              "USD=1; EUR=(USD per EUR)",
+                "same_as": ("the %s rates of v0.1-%s, %s and %s"
+                            % (ECB["valuation"]["date"],
+                               ECB["valuation"]["date"], V0_2_ID, V0_3_ID)),
+            },
+            "ppp": {
+                "source": ("%s, %s, %s: %s" % (
+                    WB_PPP_RAW["publisher"], WB_PPP_RAW["database"],
+                    WB_PPP_RAW["indicator"], WB_PPP_RAW["indicator_name"])),
+                "reference_year": WB_PPP_RAW["reference_year"],
+                "url": WB_PPP_RAW["url"],
+                "response_file": WB_PPP_REL,
+                "response_bytes": WB_PPP_RAW["bytes"],
+                "response_sha256": WB_PPP_RAW["sha256"],
+                "retrieved": WB_PPP_RAW["retrieved"],
+                "wdi_last_updated": WB_PPP_RAW["wdi_last_updated"],
+                "licence": WB_PPP_RAW["licence"],
+                "licence_url": WB_PPP_RAW["licence_url"],
+                "values": ("each factor is the JSON number token of the "
+                           "response, copied as a string (never parsed as a "
+                           "float)"),
+                "label": ("Not ICP 2024: no ICP 2024 results have been "
+                          "released (the latest ICP cycle is 2021, released "
+                          "May 2024). China and India: the ICP 2021 benchmark "
+                          "extrapolated to 2024 by the World Bank (no footnote "
+                          "in the response). Japan, the United Kingdom and the "
+                          "euro-area members: Eurostat-OECD annual PPPs "
+                          "(footnote '%s'). United States: 1 by definition."
+                          % WB_FOOTNOTE_EUROSTAT_OECD),
+                "label_sources": PPP_LABEL_SOURCES,
+                "euro_area_method": (
+                    "The World Bank publishes no euro-area value (EMU is null "
+                    "in the response), so the euro-area factor is a "
+                    "population-weighted blend of the %d members: "
+                    "sum(pop_i * ppp_i) / sum(pop_i), with the UN WPP 2024 "
+                    "populations used for the headcount. Weighting by people "
+                    "rather than GDP follows the one-person-one-vote stance "
+                    "and is a contestable choice (SPEC sec 10)."
+                    % len(members)),
+                "bulgaria_note": (
+                    "WDI states Bulgaria's PPP factor in euros (its country "
+                    "metadata gives the currency unit as the euro and the "
+                    "irrevocable rate 1 EUR = BGN %s from %s); it is used as "
+                    "published, with no conversion here."
+                    % (BGN_PER_EUR_FIXED, BULGARIA_JOINED)),
+            },
+            "input_states": v0_4_input_states(pop_for, ppp_for),
+        },
+        "supersedes": [{
+            "vintage": V0_2_ID,
+            "artifact_hash": v02_art["artifact_hash"],
+            "reasons": reasons,
+        }],
+        "basket": basket,
+    }
+    art = openunit.build_artifact(spec)
+    assert openunit.verify_artifact(art, spec), "v0.4 failed self-verification"
+    assert art["value_usd"] == ppp_artifact(pop_for, ppp_for)["value_usd"]
+
+    sources = sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for,
+                               v02_art, revised, added)
+    if persist:
+        d = os.path.join(DATA, V0_4_ID)
+        write(os.path.join(d, "spec.json"), dump_json(spec))
+        write(os.path.join(d, "artifact.json"), dump_json(art))
+        write(os.path.join(d, "SOURCES.md"), sources)
+    return V0_4_ID, spec, art, sources
+
+
+def sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for, v02_art,
+                     revised, added):
+    q6 = Decimal("0.000001")
+    old_ppp = v0_2_ppp_by_iso3()
+    sup = spec["supersedes"][0]
+    ppp_p = spec["provenance"]["ppp"]
+    lines = []
+    lines.append("# openunit vintage `%s` -- sources & provenance\n" % V0_4_ID)
+    lines.append("**Status: REAL DATA.** v0.2's PPP-aware method (population "
+                 "weights; nominal ECB FX on the baseline leg; PPP on the "
+                 "valuation leg, so the unit is read in international dollars) "
+                 "with the populations of `%s` (the UN Population Division's "
+                 "own WPP 2024 file, 21 euro-area members) and World Bank "
+                 "`PA.NUS.PPP` for reference year 2024, read from a pinned API "
+                 "response. Re-running `make_vintages.py` reproduces "
+                 "`spec.json` and `artifact.json` byte for byte.\n" % V0_3_ID)
+    lines.append("- `input_digest`  : `%s`" % art["input_digest"])
+    lines.append("- `artifact_hash` : `%s`" % art["artifact_hash"])
+    lines.append("- **1 openunit = %s international $**\n"
+                 % Decimal(art["value_usd"]).quantize(q6))
+
+    lines.append("## Supersedes `%s`\n" % sup["vintage"])
+    lines.append("This vintage is a correction of `%s` (`artifact_hash` `%s`). "
+                 "That vintage is **not rewritten**: its files and hashes stay "
+                 "exactly as published and it still verifies -- verification "
+                 "proves reproduction, not correctness. The link is recorded in "
+                 "this vintage's `spec.json` (`supersedes`, hashed) and in "
+                 "`data/vintages.json`. Reasons:\n" % (sup["vintage"],
+                                                      sup["artifact_hash"]))
+    for r in sup["reasons"]:
+        lines.append("- `%s` -- %s." % (r["code"], r["detail"]))
+    lines.append("")
+
+    lines.append("## What the PPP values are (not ICP 2024)\n")
+    lines.append("No ICP 2024 results have been released: the International "
+                 "Comparison Program's latest release is the ICP 2021 cycle "
+                 "(May 2024). The World Bank's WDI fills later years in two "
+                 "ways, and each 2024 observation in the API says which:\n")
+    lines.append("| economies | API footnote | what the 2024 value is |")
+    lines.append("|---|---|---|")
+    lines.append("| China, India | *(none)* | %s |" % PPP_BASIS["extrapolated"])
+    lines.append("| Japan, United Kingdom, the %d euro-area members | `%s` | %s |"
+                 % (len(members), WB_FOOTNOTE_EUROSTAT_OECD,
+                    PPP_BASIS["eurostat_oecd"]))
+    lines.append("| United States | `%s` | %s |" % (WB_FOOTNOTE_EUROSTAT_OECD,
+                                                   PPP_BASIS["base"]))
+    lines.append("")
+    lines.append("The World Bank says it will replace the extrapolations when "
+                 "the next ICP cycle's results are available, and between its "
+                 "April and July 2026 releases it revised five of v0.2's 2024 "
+                 "values (China and India most), so the 2024 values -- the "
+                 "extrapolations in particular -- are provisional. They are "
+                 "pinned here as published on the date retrieved. Sources "
+                 "(read %s):\n" % WB_PPP_RAW["retrieved"])
+    for u in PPP_LABEL_SOURCES:
+        lines.append("- <%s>" % u)
+    lines.append("- full finding: `docs/AUDIT.md`, addendum of 2026-10-26\n")
+
+    lines.append("## World Bank `PA.NUS.PPP` 2024 (the pinned response)\n")
+    lines.append("| field | value |")
+    lines.append("|---|---|")
+    lines.append("| source | %s |" % ppp_p["source"])
+    lines.append("| url | `%s` |" % ppp_p["url"])
+    lines.append("| retrieved | %s |" % ppp_p["retrieved"])
+    lines.append("| WDI last updated | %s |" % ppp_p["wdi_last_updated"])
+    lines.append("| response | `%s` (%s bytes, verbatim) |"
+                 % (ppp_p["response_file"], ppp_p["response_bytes"]))
+    lines.append("| response sha256 | `%s` |" % ppp_p["response_sha256"])
+    lines.append("| licence | %s, <%s> |" % (ppp_p["licence"],
+                                            ppp_p["licence_url"]))
+    lines.append("")
+    lines.append("PPP conversion factor = local-currency units per international "
+                 "$ (GDP basis); the valuation leg is `1 / factor`. Each factor "
+                 "is the JSON number token of the response, copied as a string. "
+                 "\"v0.2\" is the value v0.2 transcribed from WDI's April 2026 "
+                 "release.\n")
+    lines.append("| currency | economy | this vintage | v0.2 | basis |")
+    lines.append("|---|---|---|---|---|")
+    for c in BASKET:
+        if c == "EUR":
+            lines.append("| EUR | Euro area | %s | %s | blend of %d members "
+                         "(below) |" % (ppp_for["EUR"], v02_ppp_eur(),
+                                        len(members)))
+            continue
+        iso = ISO3_FOR_CCY[c]
+        basis = ("ICP 2021, extrapolated" if iso in WB_EXTRAPOLATED_ISO3
+                 else "base" if iso == "USA" else "Eurostat-OECD annual")
+        lines.append("| %s | %s | %s | %s | %s |" % (
+            c, CCY_NAME[c], ppp_for[c], PPP_WB[c], basis))
+    lines.append("")
+    lines.append("The euro-area aggregate (`EMU`) is `null` in the response: the "
+                 "World Bank publishes no euro-area value.\n")
+
+    lines.append("### Euro area: population-weighted blend of %d members\n"
+                 % len(members))
+    lines.append("```\nppp(euro area) = sum(pop_i * ppp_i) / sum(pop_i)\n```\n")
+    lines.append("Populations are the UN WPP 2024 figures of `%s` (the same "
+                 "numbers as the euro-area headcount). Weighting by **people** "
+                 "rather than GDP follows the one-person-one-vote stance; it is "
+                 "a **contestable value choice**, not a neutral fact (SPEC.md "
+                 "section 10). %s\n" % (V0_3_ID, ppp_p["bulgaria_note"]))
+    lines.append("| member | ISO3 | population (UN) | PA.NUS.PPP 2024 | v0.2 |")
+    lines.append("|---|---|---|---|---|")
+    for iso, name, pop in members:
+        lines.append("| %s | %s | %s | %s | %s |" % (
+            name, iso, pop, wb[iso]["value"], old_ppp.get(iso, "*(not in v0.2)*")))
+    lines.append("| **euro area (blend)** | | **%s** | **%s** | %s |"
+                 % (ea, ppp_for["EUR"], v02_ppp_eur()))
+    lines.append("")
+    lines.append("The GDP-weighted sensitivity recorded for v0.2 is not repeated "
+                 "here: it would need Bulgaria's GDP, which was not "
+                 "downloaded.\n")
+
+    lines.append("## Population and nominal FX\n")
+    lines.append("- Population: exactly the inputs of `%s` -- UN Population "
+                 "Division, *World Population Prospects 2024*, medium variant, "
+                 "`TPopulation1July` for 2026 (reference date 1 July 2026), from "
+                 "`%s` (CC BY 3.0 IGO); see that vintage's `SOURCES.md` and "
+                 "`data/sources/SOURCES.md`." % (V0_3_ID, UN_EXTRACT_REL))
+    lines.append("- Nominal FX (baseline leg): ECB euro reference rates on %s, "
+                 "the same rates as v0.1, v0.2 and v0.3: "
+                 % ECB["valuation"]["date"] + ", ".join(
+                     "%s %s" % (c, ECB["valuation"]["per_eur"][c])
+                     for c in ("USD", "JPY", "GBP", "CNY", "INR"))
+                 + " per EUR (<%s>)." % spec["provenance"]["nominal_fx"]["url"])
+    lines.append("")
+
+    st = spec["provenance"]["input_states"]
+    lines.append("## Input states (SPEC.md, \"Data states and fallbacks\")\n")
+    lines.append("Every input resolved at the target date %s under the "
+                 "declared rules; none is unavailable.\n" % st["target"])
+    lines.append("| input | observation date | state | age (days) | maximum age |")
+    lines.append("|---|---|---|---|---|")
+    for key, label in (("ecb_fx", "ECB FX"), ("population", "UN WPP 2024"),
+                       ("ppp", "PA.NUS.PPP 2024")):
+        s = st[key]
+        lines.append("| %s | %s | %s | %s | %s |" % (
+            label, s["observation_date"], s["state"], s["age_days"],
+            s["max_age_days"]))
+    lines.append("")
+    lines.append("The WPP 2024 release date is from UN DESA (<%s>, read %s).\n"
+                 % (WPP_2024_RELEASE_SOURCE, WB_PPP_RAW["retrieved"]))
+
+    lines.append("## Difference from `%s`\n" % sup["vintage"])
+    un20 = {c: un[iso]["population_persons"] for c, iso in ISO3_FOR_CCY.items()}
+    m20 = [V0_1_MEMBER_ISO3[n] for n, _ in EURO_AREA_MEMBERS]
+    pops20 = [un[iso]["population_persons"] for iso in m20]
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        un20["EUR"] = str(sum((Decimal(p) for p in pops20), Decimal(0)))
+    step_ppp_old = {c: PPP_WB[c] for c in BASKET if c != "EUR"}
+    step_ppp_old["EUR"] = str(ppp_blend(pops20, [old_ppp[i] for i in m20]))
+    step_ppp_new = {c: ppp_for[c] for c in BASKET if c != "EUR"}
+    step_ppp_new["EUR"] = str(ppp_blend(pops20, [wb[i]["value"] for i in m20]))
+    v_old = Decimal(v02_art["value_usd"])
+    steps = [
+        ("v0.2 as published (Worldometer populations, WDI April 2026)", 20,
+         v_old),
+        ("UN file populations, same 20 members, same PPP (not shipped)", 20,
+         Decimal(ppp_artifact(un20, step_ppp_old)["value_usd"])),
+        ("... and PPP from WDI %s (not shipped)"
+         % WB_PPP_RAW["wdi_last_updated"], 20,
+         Decimal(ppp_artifact(un20, step_ppp_new)["value_usd"])),
+        ("**... and Bulgaria: 21 members (this vintage)**", len(members),
+         Decimal(art["value_usd"])),
+    ]
+    lines.append("Applied one at a time, in this order:\n")
+    lines.append("| step | euro-area members | 1 openunit (int. $) | change vs v0.2 |")
+    lines.append("|---|---|---|---|")
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        for label, n, v in steps:
+            lines.append("| %s | %d | %s | %s%% |" % (
+                label, n, v.quantize(Decimal("0.000000001")),
+                format((v - v_old) / v_old * 100, ".4g")))
+    lines.append("")
+    lines.append("Weights, in per cent (population share = realized weight at "
+                 "the pin; realized weight at the PPP valuation):\n")
+    lines.append("| code | v0.2 share | v0.4 share | v0.2 at PPP | v0.4 at PPP |")
+    lines.append("|---|---|---|---|---|")
+    for r_old, r_new in zip(v02_art["basket"], art["basket"]):
+        lines.append("| %s | %s | %s | %s | %s |" % (
+            r_new["code"], _pct(r_old["population_share"]),
+            _pct(r_new["population_share"]),
+            _pct(r_old["realized_weight_at_valuation"]),
+            _pct(r_new["realized_weight_at_valuation"])))
+    lines.append("")
+
+    lines.append("## How to verify\n")
+    lines.append("```\npython3 make_vintages.py --verify\n"
+                 "python3 verify_independent.py data/%s/spec.json data/%s/artifact.json\n"
+                 "```\n" % (V0_4_ID, V0_4_ID))
+    lines.append("`make_vintages.py` refuses to build if the World Bank "
+                 "response's sha256 or size changes, if a value is not a plain "
+                 "decimal token, if the footnotes no longer split the economies "
+                 "as above, or if the World Bank starts publishing a euro-area "
+                 "value. A fresh request to the URL above may return a later WDI "
+                 "release; the committed response is the one this vintage "
+                 "used.\n")
+    return "\n".join(lines)
+
+
+def v02_ppp_eur():
+    """v0.2's shipped euro-area factor (20-member blend), full precision."""
+    return PPP_WB["EUR"]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="make_vintages.py",
@@ -1191,7 +1811,8 @@ def main(argv=None):
 
     built = [build_v0_1(persist=not args.verify),
              build_v0_2(persist=not args.verify),
-             build_v0_3_unwpp(persist=not args.verify)]
+             build_v0_3_unwpp(persist=not args.verify),
+             build_v0_4_ppp(persist=not args.verify)]
 
     if not args.verify:
         for vid, _spec, art, _src in built:

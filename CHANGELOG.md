@@ -20,11 +20,30 @@ versions** (the `method_version` field) and to releases of this repository.
 - `data/sources/un_wpp2024_population_2026.csv`: the 26 UN rows used (verbatim
   plus a derived persons column), pinned by sha256; `make_vintages.py
   --check-un-wpp RAW` re-derives it from the raw UN file byte for byte.
+- **New vintage `v0.4-ppp-unwpp-2026-05-15`** (method version `v0.4`,
+  `artifact_hash` `sha256:db4cd6e1…221d`, `1 openunit = 2.845044 international
+  dollars`; v0.2: 2.848010, −0.104 %): v0.2's PPP-aware method with
+  v0.3-unwpp's UN populations and 21-member euro area (headcount and PPP
+  blend; euro-area factor 0.638144, v0.2: 0.642950), v0.2's ECB nominal FX,
+  and World Bank `PA.NUS.PPP` 2024 from one API response committed verbatim
+  (`data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json`, 7316 bytes, sha256
+  `b4db34d4…ed0d`, CC BY 4.0, retrieved 2026-10-26, WDI last updated
+  2026-10-08). Each factor is labelled as the World Bank labels it (ICP 2021
+  extrapolation for China and India, Eurostat-OECD annual PPP otherwise), and
+  the spec records each input's state under "Data states and fallbacks"
+  (`provenance.input_states`). It declares in its hashed spec that it
+  **supersedes** `v0.2-ppp-2026-05-15` (reasons `EURO_AREA_MEMBERSHIP`,
+  `POPULATION_VIA_REPUBLISHER`, `POPULATION_MISMATCH`, `PPP_LABEL`,
+  `PPP_REVISED`); v0.2 becomes `superseded` in `data/vintages.json` and v0.4
+  carries the warning `PPP_EXTRAPOLATED`.
 - `data/vintages.json`: append-only registry of supersedes / superseded_by
   links and machine-readable warnings (v0.1: superseded; v0.2: current with
   warnings).
 - Tests: published v0.1/v0.2 files pinned by sha256 (never rewritten); v0.3
-  populations = UN extract; v0.3 FX = v0.1 FX; registry consistency.
+  populations = UN extract; v0.3 FX = v0.1 FX; registry consistency; v0.4
+  populations = v0.3's, PPP factors = the pinned response's exact tokens,
+  euro-area blend recomputed, labels follow the World Bank's footnotes,
+  input states re-resolved.
 - **`SPEC.md` "Data states and fallbacks"**: pre-declared, deterministic rules
   for stale inputs (maximum age per source: ECB 4 days, UN WPP 1461 days, World
   Bank PPP 1096 days), suspended rates (ECB RUB), extinct currencies with a

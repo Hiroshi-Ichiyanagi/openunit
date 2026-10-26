@@ -1,0 +1,225 @@
+{
+  "method": "openunit",
+  "method_version": "v0.4",
+  "numeraire": "USD",
+  "weight_vintage": {
+    "label": "UN-WPP-2024 + WB-PPP-2024 (WDI 2026-10-08)",
+    "basis": "population_share",
+    "frequency": "low; baseline=nominal FX, valuation=PPP (international $)",
+    "note": "One person, one vote (population weights), read in international dollars: v0.2's method (SPEC sec 2.3) with the populations of v0.3-unwpp-2026-05-15 (the UN Population Division's own WPP 2024 file; 21 euro-area members) and World Bank PA.NUS.PPP for reference year 2024. These PPPs are not ICP 2024 values: China and India are the ICP 2021 benchmark extrapolated by the World Bank; the others are Eurostat-OECD annual PPPs."
+  },
+  "rounding": {
+    "precision": 50,
+    "mode": "ROUND_HALF_EVEN",
+    "display_dp": 6
+  },
+  "provenance": {
+    "population": {
+      "source": "United Nations, Department of Economic and Social Affairs, Population Division (2024). World Population Prospects 2024, Online Edition.",
+      "publisher": "United Nations, Department of Economic and Social Affairs, Population Division",
+      "file": "WPP2024_Demographic_Indicators_Medium.csv.gz",
+      "url": "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20%28Standard%29/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz",
+      "file_bytes": "16557272",
+      "file_sha256": "286ac36bb1415e2e1ade03acfef0a29f0e4c087e2f78e38c48f50c5df89082bc",
+      "server_last_modified": "Fri, 13 Dec 2024 19:11:17 GMT",
+      "retrieved": "2026-10-26",
+      "licence": "CC BY 3.0 IGO",
+      "licence_url": "http://creativecommons.org/licenses/by/3.0/igo/",
+      "copyright": "Copyright (c) 2024 by United Nations",
+      "variant": "Medium",
+      "field": "TPopulation1July (thousands of persons, total population on 1 July)",
+      "time": "2026",
+      "reference_date": "2026-07-01",
+      "reference_note": "WPP 2024 estimates run to 2023; 2026 values are medium-variant projections for 1 July 2026 (the same reference v0.1 used)",
+      "conversion": "population = TPopulation1July x 1000 (exact; every value has at most 3 decimals)",
+      "extract": "data/sources/un_wpp2024_population_2026.csv",
+      "extract_sha256": "cc41a3b2bc61eb17343532506380035487d2f599d5e255682751fb1c4e0a2160",
+      "changes": "26 rows selected (Time=2026, Medium; the basket economies and the euro-area members); thousands converted to persons; no other modification",
+      "interim_update": "The WPP 2024 interim update released on 19 January 2026 revises Togo only; none of the locations used here changed",
+      "same_as": "v0.3-unwpp-2026-05-15"
+    },
+    "euro_area": {
+      "definition": "sum of the 21 euro-area member states",
+      "as_of": "2026-05-15",
+      "members_iso3": [
+        "AUT",
+        "BEL",
+        "BGR",
+        "CYP",
+        "DEU",
+        "ESP",
+        "EST",
+        "FIN",
+        "FRA",
+        "GRC",
+        "HRV",
+        "IRL",
+        "ITA",
+        "LTU",
+        "LUX",
+        "LVA",
+        "MLT",
+        "NLD",
+        "PRT",
+        "SVK",
+        "SVN"
+      ],
+      "source": "https://www.ecb.europa.eu/euro/intro/html/index.en.html",
+      "accession_note": "Bulgaria joined the euro area on 2026-01-01 at the conversion rate BGN 1.95583 = EUR 1 (https://www.ecb.europa.eu/euro/changeover/bulgaria/html/index.en.html). Both FX dates fall after accession, so Bulgaria's population is valued at the EUR rate on both legs.",
+      "same_as": "v0.3-unwpp-2026-05-15"
+    },
+    "nominal_fx": {
+      "source": "European Central Bank, euro foreign exchange reference rates (units of currency per 1 EUR)",
+      "date": "2026-05-15",
+      "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+      "conversion": "usd_per_unit(C) = (USD per EUR) / (C per EUR); USD=1; EUR=(USD per EUR)",
+      "same_as": "the 2026-05-15 rates of v0.1-2026-05-15, v0.2-ppp-2026-05-15 and v0.3-unwpp-2026-05-15"
+    },
+    "ppp": {
+      "source": "World Bank, World Development Indicators (WDI), PA.NUS.PPP: PPP conversion factor, GDP (LCU per international $)",
+      "reference_year": "2024",
+      "url": "https://api.worldbank.org/v2/country/AUT;BEL;BGR;CHN;CYP;DEU;EMU;ESP;EST;FIN;FRA;GBR;GRC;HRV;IND;IRL;ITA;JPN;LTU;LUX;LVA;MLT;NLD;PRT;SVK;SVN;USA/indicator/PA.NUS.PPP?date=2024&format=json&footnote=y&per_page=100",
+      "response_file": "data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json",
+      "response_bytes": "7316",
+      "response_sha256": "b4db34d4ee9bfef0aa0efbc116bd587cbd480f9cfbfa34c85c845f42fe7aed0d",
+      "retrieved": "2026-10-26",
+      "wdi_last_updated": "2026-10-08",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://datacatalog.worldbank.org/public-licenses#cc-by",
+      "values": "each factor is the JSON number token of the response, copied as a string (never parsed as a float)",
+      "label": "Not ICP 2024: no ICP 2024 results have been released (the latest ICP cycle is 2021, released May 2024). China and India: the ICP 2021 benchmark extrapolated to 2024 by the World Bank (no footnote in the response). Japan, the United Kingdom and the euro-area members: Eurostat-OECD annual PPPs (footnote 'Eurostat-OECD annual PPP'). United States: 1 by definition.",
+      "label_sources": [
+        "https://www.worldbank.org/en/programs/icp",
+        "https://www.worldbank.org/en/programs/icp/faq",
+        "https://api.worldbank.org/v2/sources/2/series/PA.NUS.PPP/metadata?format=json",
+        "https://datahelpdesk.worldbank.org/knowledgebase/articles/665452-how-do-you-extrapolate-the-ppp-conversion-factors"
+      ],
+      "euro_area_method": "The World Bank publishes no euro-area value (EMU is null in the response), so the euro-area factor is a population-weighted blend of the 21 members: sum(pop_i * ppp_i) / sum(pop_i), with the UN WPP 2024 populations used for the headcount. Weighting by people rather than GDP follows the one-person-one-vote stance and is a contestable choice (SPEC sec 10).",
+      "bulgaria_note": "WDI states Bulgaria's PPP factor in euros (its country metadata gives the currency unit as the euro and the irrevocable rate 1 EUR = BGN 1.95583 from 2026-01-01); it is used as published, with no conversion here."
+    },
+    "input_states": {
+      "rule": "SPEC.md, 'Data states and fallbacks' (resolve_input)",
+      "target": "2026-05-15",
+      "ecb_fx": {
+        "source": "ECB euro reference rates",
+        "observation_date": "2026-05-15",
+        "state": "ok",
+        "age_days": "0",
+        "max_age_days": "4",
+        "flags": []
+      },
+      "population": {
+        "source": "UN World Population Prospects",
+        "observation_date": "2024-07-11",
+        "state": "stale",
+        "age_days": "673",
+        "max_age_days": "1461",
+        "flags": [
+          "STALE"
+        ],
+        "observation_date_basis": "release of WPP 2024 (UN DESA, 2024-07-11); the figures themselves refer to 1 July 2026"
+      },
+      "ppp": {
+        "source": "World Bank PA.NUS.PPP",
+        "observation_date": "2024-07-01",
+        "state": "stale",
+        "age_days": "683",
+        "max_age_days": "1096",
+        "flags": [
+          "STALE"
+        ],
+        "observation_date_basis": "1 July of the reference year 2024"
+      }
+    }
+  },
+  "supersedes": [
+    {
+      "vintage": "v0.2-ppp-2026-05-15",
+      "artifact_hash": "sha256:566c95c1753dbcaa70bbfd58c295ced2117d4907d4d7aabb992d68a93f10b97a",
+      "reasons": [
+        {
+          "code": "EURO_AREA_MEMBERSHIP",
+          "detail": "v0.2 counts 20 euro-area member states, in the headcount and in the PPP blend; Bulgaria joined the euro area on 2026-01-01, so on v0.2's FX date (2026-05-15) it had 21 members"
+        },
+        {
+          "code": "POPULATION_VIA_REPUBLISHER",
+          "detail": "v0.2 took the UN WPP 2024 figures from Worldometer's republication; this vintage reads the UN Population Division's own file (as v0.3-unwpp-2026-05-15)"
+        },
+        {
+          "code": "POPULATION_MISMATCH",
+          "detail": "2 of v0.2's 25 populations differ from the UN file: Greece 9897115 (v0.2) vs 9897116 (UN); Slovenia 2114573 (v0.2) vs 2114574 (UN)"
+        },
+        {
+          "code": "PPP_LABEL",
+          "detail": "v0.2 labels its PA.NUS.PPP 2024 values 'ICP 2024'; no ICP 2024 results have been released (the latest ICP cycle is 2021, released May 2024). The values are the ICP 2021 benchmark extrapolated by the World Bank (China, India) or Eurostat-OECD annual PPPs (Japan, United Kingdom, euro-area members); the United States is 1 by definition"
+        },
+        {
+          "code": "PPP_REVISED",
+          "detail": "v0.2's PA.NUS.PPP values are WDI's April 2026 release; this vintage uses the release last updated 2026-10-08, in which 5 of them differ: China 3.5325492491585 -> 3.52537888953537; Croatia 0.44841971235566 -> 0.448418364962435; Cyprus 0.56709589608174 -> 0.567094524089419; India 20.4219876045922 -> 20.4522424138694; Malta 0.580522225637102 -> 0.580520850861783"
+        }
+      ]
+    }
+  ],
+  "basket": [
+    {
+      "code": "USD",
+      "name": "United States",
+      "population": "349035494",
+      "fx_baseline_usd_per_unit": "1",
+      "fx_valuation_usd_per_unit": "1",
+      "source_eur_per_unit_baseline": "1.1628",
+      "ppp_factor_lcu_per_intl_usd": "1",
+      "ppp_basis": "1 by definition (the international dollar has the purchasing power of the US dollar in the United States)"
+    },
+    {
+      "code": "EUR",
+      "name": "Euro area",
+      "population": "354408517",
+      "fx_baseline_usd_per_unit": "1.1628",
+      "fx_valuation_usd_per_unit": "1.5670438636049489019542157983866454415280269474384",
+      "source_eur_per_unit_baseline": "1",
+      "ppp_factor_lcu_per_intl_usd": "0.63814423018097442283503023151105592645788475788803",
+      "ppp_basis": "population-weighted blend, computed here, of the 21 euro-area members' Eurostat-OECD annual PPPs for 2024 as published in WDI; not a World Bank value"
+    },
+    {
+      "code": "CNY",
+      "name": "China",
+      "population": "1412914089",
+      "fx_baseline_usd_per_unit": "0.14682930525039775740586408061216758845367073263126",
+      "fx_valuation_usd_per_unit": "0.28365745394583552488080325457595498796829352037667",
+      "source_eur_per_unit_baseline": "7.9194",
+      "ppp_factor_lcu_per_intl_usd": "3.52537888953537",
+      "ppp_basis": "ICP 2021 benchmark, extrapolated to 2024 by the World Bank (WDI; change in the GDP deflator relative to the United States)"
+    },
+    {
+      "code": "JPY",
+      "name": "Japan",
+      "population": "122427731",
+      "fx_baseline_usd_per_unit": "0.0063072249945758298980256020828813191581688001735734",
+      "fx_valuation_usd_per_unit": "0.010586200364866099015547941889678474758036246705429",
+      "source_eur_per_unit_baseline": "184.36",
+      "ppp_factor_lcu_per_intl_usd": "94.462599",
+      "ppp_basis": "Eurostat-OECD PPP Programme annual PPP for 2024, as published in WDI"
+    },
+    {
+      "code": "GBP",
+      "name": "United Kingdom",
+      "population": "69931528",
+      "fx_baseline_usd_per_unit": "1.3357840321654221711659965537047673750717978173464",
+      "fx_valuation_usd_per_unit": "1.5056771557156257669543011926468750423471700045020",
+      "source_eur_per_unit_baseline": "0.8705",
+      "ppp_factor_lcu_per_intl_usd": "0.664153",
+      "ppp_basis": "Eurostat-OECD PPP Programme annual PPP for 2024, as published in WDI"
+    },
+    {
+      "code": "INR",
+      "name": "India",
+      "population": "1476625576",
+      "fx_baseline_usd_per_unit": "0.010419915049196193343728157427818699930103769019840",
+      "fx_valuation_usd_per_unit": "0.048894394060274979481977105824477551101095450186844",
+      "source_eur_per_unit_baseline": "111.594",
+      "ppp_factor_lcu_per_intl_usd": "20.4522424138694",
+      "ppp_basis": "ICP 2021 benchmark, extrapolated to 2024 by the World Bank (WDI; change in the GDP deflator relative to the United States)"
+    }
+  ]
+}
