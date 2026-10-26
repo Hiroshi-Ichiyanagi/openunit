@@ -28,8 +28,8 @@ versions** (the `method_version` field) and to releases of this repository.
 - Kept as wire identifiers: the anchor record version `openunit-anchor-1`
   (part of every anchor commitment) and the registry format
   `openunit-vintage-registry-1`.
-- The GitHub repository and the URLs in `pyproject.toml` keep the old name
-  until the repository is renamed; the URLs will be updated then.
+- The GitHub repository was renamed to `worldyard` on 2026-10-26 (links to
+  the old name redirect); the URLs in `pyproject.toml` point to the new name.
 
 ### Deprecated
 

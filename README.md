@@ -6,8 +6,8 @@ A deterministic, publicly verifiable, **population-weighted unit of account**.
 > Python module, the command and the method name are now `worldyard`.
 > `import openunit` and the `openunit` command still work, with a deprecation
 > notice. Vintages built before the rename keep the method name `openunit`
-> and every hash they had. The GitHub repository still has the old name; it
-> will move to the new name later.
+> and every hash they had. The GitHub repository was renamed to `worldyard` on
+> 2026-10-26; links to the old name redirect.
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)

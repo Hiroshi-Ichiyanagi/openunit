@@ -28,12 +28,10 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 
-# The repository keeps its old name until it is renamed; the URLs will be
-# updated then.
 [project.urls]
-Homepage = "https://github.com/Hiroshi-Ichiyanagi/openunit"
-Repository = "https://github.com/Hiroshi-Ichiyanagi/openunit"
-Issues = "https://github.com/Hiroshi-Ichiyanagi/openunit/issues"
+Homepage = "https://github.com/Hiroshi-Ichiyanagi/worldyard"
+Repository = "https://github.com/Hiroshi-Ichiyanagi/worldyard"
+Issues = "https://github.com/Hiroshi-Ichiyanagi/worldyard/issues"
 
 [project.scripts]
 worldyard = "cli:main"
