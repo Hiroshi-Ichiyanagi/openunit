@@ -24,7 +24,7 @@ Mechanism (see SPEC.md):
   - vintage pinning      : fixed currency amounts -- the population version of
                            the SDR fixed-basket method
 
-Determinism guarantees:
+Determinism properties:
   - stdlib only (json, hashlib, decimal)
   - exact arithmetic with decimal.Decimal (prec=50, ROUND_HALF_EVEN) inside an
     isolated localcontext; numbers parsed from strings, never from floats
@@ -400,6 +400,56 @@ def resolve_input(target, series, max_age_days=0, rate_type=None):
                    rate_type, flags)
 
 
+# --- display (never hashed) ---------------------------------------------------
+INTL_DOLLAR = "international $"
+
+
+def _ppp_valued(spec):
+    """True iff every basket entry records `ppp_factor_lcu_per_intl_usd` and
+    its `fx_valuation_usd_per_unit` is exactly 1 / that factor, i.e. the
+    valuation leg is PPP (SPEC.md section 2.3)."""
+    basket = spec.get("basket") or []
+    if not basket:
+        return False
+    with localcontext() as ctx:
+        ctx.prec = PRECISION
+        ctx.rounding = ROUNDING
+        for e in basket:
+            factor = e.get("ppp_factor_lcu_per_intl_usd")
+            if factor is None:
+                return False
+            try:
+                if (Decimal(1) / Decimal(factor)
+                        != Decimal(e["fx_valuation_usd_per_unit"])):
+                    return False
+            except (ArithmeticError, KeyError, TypeError, ValueError):
+                return False
+    return True
+
+
+def display_unit(artifact, spec=None):
+    """The unit text printed after an artifact's value. Display only: it
+    changes no hashed field.
+
+    PPP vintages (v0.2, v0.4) keep the hashed `numeraire` "USD", but their
+    value is in international dollars (SPEC.md section 2.3), so they print as
+    'international $ (numeraire field: USD)'. With the spec, a PPP vintage is
+    recognised exactly (see _ppp_valued). From an artifact alone the only hint
+    is its hashed `weight_vintage_label`: the PPP vintages carry the token
+    "PPP" there ("WB-PPP-2024"). Every other artifact prints its numeraire."""
+    numeraire = artifact.get("numeraire", "USD")
+    if numeraire != "USD":
+        return numeraire
+    if spec is not None:
+        ppp = _ppp_valued(spec)
+    else:
+        label = artifact.get("weight_vintage_label", "")
+        ppp = "PPP" in "".join(c if c.isalnum() else " " for c in label).split()
+    if not ppp:
+        return numeraire
+    return "%s (numeraire field: %s)" % (INTL_DOLLAR, numeraire)
+
+
 # --- demo --------------------------------------------------------------------
 def _demo(path="sample_input.json"):
     with open(path, "r", encoding="utf-8") as fh:
@@ -414,7 +464,8 @@ def _demo(path="sample_input.json"):
     print("Worldyard reference demo  (%s %s)"
           % (artifact["method"], artifact["method_version"]))
     print("-" * 62)
-    print("1 %-9s = %s %s" % (artifact["method"], value, artifact["numeraire"]))
+    print("1 %-9s = %s %s"
+          % (artifact["method"], value, display_unit(artifact, spec)))
     print("weight basis: %s   vintage: %s"
           % (artifact["weight_basis"], artifact["weight_vintage_label"]))
     print()

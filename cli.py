@@ -11,7 +11,7 @@ Worldyard (formerly openunit) command-line interface.
 
 Exit code 0 on success, 1 on any verification failure or error. The CLI is a
 thin wrapper over the engine (worldyard.py) and the anchoring helper
-(anchor.py); all determinism guarantees live there. The old command name
+(anchor.py); all determinism properties live there. The old command name
 `openunit` still works (main_openunit) and prints a deprecation notice on
 stderr.
 """
@@ -49,7 +49,8 @@ def cmd_build(args):
     if args.output:
         v = Decimal(art["value_usd"]).quantize(Decimal("0.000001"))
         print("built %s  ->  1 %s = %s %s"
-              % (args.output, art["method"], v, art["numeraire"]))
+              % (args.output, art["method"], v,
+                 worldyard.display_unit(art, spec)))
         print("artifact_hash: %s" % art["artifact_hash"])
     return 0
 
@@ -66,7 +67,7 @@ def cmd_show(args):
     art = _load(args.artifact)
     v = Decimal(art["value_usd"]).quantize(Decimal("0.000001"))
     print("method        : %s %s" % (art["method"], art["method_version"]))
-    print("1 unit        : %s %s" % (v, art["numeraire"]))
+    print("1 unit        : %s %s" % (v, worldyard.display_unit(art)))
     print("weight basis  : %s" % art["weight_basis"])
     print("vintage       : %s" % art["weight_vintage_label"])
     print("input_digest  : %s" % art["input_digest"])

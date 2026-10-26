@@ -204,6 +204,31 @@ def compare(spec, artifact):
     return unique
 
 
+# --- display only (SPEC.md section 2.3; never hashed) -------------------------
+def is_ppp_valued(spec):
+    """True iff every basket entry records `ppp_factor_lcu_per_intl_usd` and
+    its `fx_valuation_usd_per_unit` equals 1 / that factor exactly: a PPP
+    valuation leg, whose value is read in international dollars although the
+    hashed `numeraire` stays "USD" (SPEC.md section 2.3)."""
+    basket = spec.get("basket") or []
+    if not basket:
+        return False
+    with localcontext() as ctx:
+        ctx.prec = DEC_PRECISION
+        ctx.rounding = ROUND_HALF_EVEN
+        for entry in basket:
+            factor = entry.get("ppp_factor_lcu_per_intl_usd")
+            if factor is None:
+                return False
+            try:
+                one_over = Decimal(1) / Decimal(factor)
+                if one_over != Decimal(entry["fx_valuation_usd_per_unit"]):
+                    return False
+            except (ArithmeticError, KeyError, TypeError, ValueError):
+                return False
+    return True
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="verify_independent.py",
@@ -240,8 +265,10 @@ def main(argv=None):
     print("  artifact      : %s" % args.artifact)
     print("  input_digest  : %s" % artifact["input_digest"])
     print("  artifact_hash : %s" % artifact["artifact_hash"])
-    print("  value_usd     : %s %s" % (artifact["value_usd"],
-                                       artifact["numeraire"]))
+    unit = artifact["numeraire"]
+    if unit == "USD" and is_ppp_valued(spec):
+        unit = "international $ (numeraire field: USD)"
+    print("  value_usd     : %s %s" % (artifact["value_usd"], unit))
     return 0
 
 

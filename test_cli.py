@@ -7,9 +7,20 @@ Standalone (`python3 test_cli.py`) and pytest compatible.
 """
 
 import os
+import io
 import json
 import tempfile
+from contextlib import redirect_stdout
+
 import cli
+import worldyard
+import verify_independent
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+# PPP vintages keep the hashed numeraire "USD" but are read in international
+# dollars (SPEC.md section 2.3); nominal vintages are read in USD.
+PPP_VINTAGES = ("v0.2-ppp-2026-05-15", "v0.4-ppp-unwpp-2026-05-15")
+NOMINAL_VINTAGES = ("v0.1-2026-05-15", "v0.3-unwpp-2026-05-15")
 
 
 SPEC = {
@@ -58,6 +69,58 @@ def test_show_runs():
         art_p = os.path.join(d, "artifact.json")
         cli.main(["build", spec_p, "-o", art_p])
         assert cli.main(["show", art_p]) == 0
+
+
+def _out(argv):
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        assert cli.main(argv) == 0
+    return buf.getvalue()
+
+
+def test_ppp_vintages_print_international_dollars():
+    """Display only: `show` and `build` print a PPP vintage's value in
+    international $, a nominal one in USD; the artifact (and its hashed
+    `numeraire` "USD") is unchanged."""
+    with tempfile.TemporaryDirectory() as d:
+        for vid in PPP_VINTAGES + NOMINAL_VINTAGES:
+            vd = os.path.join(HERE, "data", vid)
+            art_p = os.path.join(vd, "artifact.json")
+            spec_p = os.path.join(vd, "spec.json")
+            with open(art_p, "r", encoding="utf-8") as fh:
+                art = json.load(fh)
+            with open(spec_p, "r", encoding="utf-8") as fh:
+                spec = json.load(fh)
+            assert art["numeraire"] == "USD", vid
+            shown = _out(["show", art_p])
+            out_p = os.path.join(d, vid + ".json")
+            built = _out(["build", spec_p, "-o", out_p])
+            with open(out_p, "r", encoding="utf-8") as fh:
+                assert json.load(fh) == art, vid
+            ppp = vid in PPP_VINTAGES
+            for text in (shown, built):
+                assert ("international $ (numeraire field: USD)" in text) == ppp, vid
+            assert worldyard._ppp_valued(spec) == ppp, vid
+            assert verify_independent.is_ppp_valued(spec) == ppp, vid
+            assert (worldyard.display_unit(art)
+                    == worldyard.display_unit(art, spec)), vid
+
+
+def test_display_unit_needs_a_ppp_valuation_leg():
+    """A spec that records PPP factors but values at other rates is not
+    printed as international $; neither is the plain test spec."""
+    art = worldyard.build_artifact(SPEC)
+    assert worldyard.display_unit(art, SPEC) == "USD"
+    assert worldyard.display_unit(art) == "USD"
+    spec = json.loads(json.dumps(SPEC))
+    for e in spec["basket"]:
+        e["ppp_factor_lcu_per_intl_usd"] = "2"
+    assert not worldyard._ppp_valued(spec)
+    assert not verify_independent.is_ppp_valued(spec)
+    for e in spec["basket"]:
+        e["fx_valuation_usd_per_unit"] = "0.5"
+    assert worldyard._ppp_valued(spec)
+    assert verify_independent.is_ppp_valued(spec)
 
 
 def test_anchor_roundtrip():
