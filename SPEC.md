@@ -169,6 +169,159 @@ non-negative population data (UN WPP) with positive totals, so this tightening
 changes **no** published artifact and **no** hash — it only narrows the accepted
 input domain at its previously-undefined edge.
 
+## Data states and fallbacks
+
+openunit never guesses an input. Before a vintage is built, every input — an FX
+rate on a date, a population for a year, a PPP factor for a reference year — is
+either **resolved** by one of the rules below or it is **unavailable**, and an
+unavailable input is never put into a spec. The rules are declared here in
+advance and are deterministic: the same observations and the same declared rule
+give the same state, value and flags, on any machine, at any time.
+
+Resolution happens **before** the engine runs. `build_artifact` is unchanged and
+still takes only resolved numbers, so these rules change no shipped spec,
+artifact or hash. The reference implementation is `openunit.resolve_input`
+(pure: no I/O, no clock, independent of the order of the observations; tested by
+`test_fallbacks.py`).
+
+Scope, stated plainly: these rules make the *treatment* of gaps reproducible and
+visible. They do not make a carried-forward or converted number economically
+current, and an offline re-check proves only that a past observation was
+reproduced, not that it describes today's economy.
+
+### States
+
+| state | meaning | value |
+|---|---|---|
+| `ok` | an observation exists on the target date | the observation, verbatim |
+| `stale` | none on the target date; the latest *earlier* one is within the source's maximum age | that observation, verbatim; flag `STALE`, `age_days` recorded |
+| `fixed_conversion` | the currency was replaced by a successor at a fixed conversion rate on or before the target date | successor's resolved value ÷ the fixed rate (exact, precision 50); flag `FIXED_CONVERSION` plus the successor's flags |
+| `unavailable` | no rule applies | none (`null`), with a `reason` code |
+
+A later observation never serves an earlier target (no look-ahead), values are
+never interpolated or averaged, and no undeclared source is substituted.
+
+### Rules, in order (the first that applies decides)
+
+1. **Extinct currency, fixed conversion.** If the series declares
+   `fixed_conversion` and the target is on or after its `effective` date, the
+   value is the successor's resolved value divided by `units_per_successor`;
+   the old currency's own observations are no longer used, even within the
+   maximum age. If the successor is unavailable, so is the input
+   (`SUCCESSOR_UNAVAILABLE:<successor's reason>`).
+2. **Permanent hole.** If the target is a declared permanent hole →
+   `unavailable` (`PERMANENT_HOLE`). A series that declares a hole and also
+   carries an observation inside it is malformed.
+3. **Suspended rate.** If the target is on or after `suspended_since` →
+   `unavailable` (`SUSPENDED`), even within the maximum age.
+4. **Retired source.** If the target is on or after `retired_since` →
+   `unavailable` (`SOURCE_RETIRED`).
+5. **Selection.** Take the observations dated on or before the target,
+   restricted to the declared `rate_type` if one is declared. None →
+   `unavailable` (`NO_OBSERVATION`).
+6. **One value per date.** If more than one remains on the latest date →
+   `unavailable` (`AMBIGUOUS_MULTIPLE_RATES`). If a declared `rate_type` picked
+   one rate out of several on that date, the result is flagged `MULTIPLE_RATES`.
+7. **Age.** `age_days` = target − observation date. Above the source's maximum
+   age → `unavailable` (`TOO_OLD`); 0 → `ok`; otherwise `stale`.
+
+### The situations, and the declared rule for each
+
+- **Stale input — maximum age per source.** A target date with no observation
+  may be served by the latest earlier observation only within the source's
+  maximum age:
+
+  | source | observation date | maximum age |
+  |---|---|---|
+  | ECB euro reference rates (daily) | reference date | **4 calendar days** |
+  | UN World Population Prospects | release date of the revision used | **1461 days** (4 years) before the vintage's weight date |
+  | World Bank `PA.NUS.PPP` (annual) | 1 July of the reference year | **1096 days** (3 years) before the valuation date |
+
+  The ECB publishes no rates at weekends or on TARGET closing days (1 January,
+  Good Friday, Easter Monday, 1 May, 25 and 26 December); the longest such run
+  serves Easter Monday (or 26 December falling on a Tuesday) with a rate 4
+  days old, so 4 days is the shortest maximum age that covers every
+  closing-day sequence (`test_fallbacks.py` checks this for 2000–2199). The UN
+  released WPP 2024 on 11 July 2024 and has postponed its next revision to
+  11 July 2027; four years covers that postponement. The three values are
+  pre-declared in `openunit.DECLARED_MAX_AGE_DAYS`. A vintage may declare a
+  stricter maximum age (it is then hashed with the spec) but never a looser one
+  without saying so in its `SOURCES.md`. The shipped vintages use ECB rates on
+  their exact dates (age 0), WPP 2024 (547 days before their 2026-01-09
+  baseline) and, for v0.2, `PA.NUS.PPP` 2024 (683 days before 2026-05-15).
+- **Suspended or unrepresentative rate.** When the publisher suspends a rate
+  because it can no longer set a representative one — the ECB has published no
+  euro reference rate for the Russian rouble after 1 March 2022 — the input is
+  `unavailable` from the suspension date on. The last rate before the
+  suspension is not carried forward. A basket that needs such a currency must
+  declare another source, or a different basket, in a new vintage; a
+  replacement source must be shown to be independent (a cross rate computed
+  from the suspended publisher's own rates is not).
+- **Extinct currency with a fixed conversion.** From the effective date, the
+  old currency exists only through its successor: Bulgaria joined the euro area
+  on 2026-01-01 at BGN 1.95583 = EUR 1 (ECB), so for any later date
+  `value(BGN) = value(EUR) / 1.95583`. Before the date, the lev's own rates
+  apply. In a basket, the people of the joining economy belong to the
+  successor's entry from the effective date (`v0.3-unwpp` counts Bulgaria in
+  the euro area).
+- **Multiple official or parallel rates.** When a source publishes more than one
+  rate for a currency on a date, the spec must declare which `rate_type` it
+  uses; the result is flagged `MULTIPLE_RATES` so readers see that a choice was
+  made. Without a declared type, or with two values of the declared type on one
+  date, the input is `unavailable` (`AMBIGUOUS_MULTIPLE_RATES`). A parallel or
+  unofficial rate is used only if a vintage declares it as its source.
+- **Permanent data holes.** A period that will never be published is declared
+  as a hole and is `unavailable` (`PERMANENT_HOLE`) — it is not interpolated
+  and not filled from the neighbouring periods. Example: after the 2025 lapse
+  in US appropriations, BLS issued no October 2025 CPI release and did not
+  publish October 2025 indexes for most CPI series; it chose not to collect the
+  data retroactively. (openunit uses no CPI today; the rule applies to any
+  input.)
+- **Source endpoint retirement.** A vintage never depends on an endpoint: its
+  raw numbers are reproduced in its `SOURCES.md` and hashed in its spec, so it
+  stays verifiable offline after a URL disappears. A series is identified by
+  publisher, series and definition, not by URL. When the same series moves to a
+  new endpoint — the Federal Reserve has announced the eventual retirement of
+  the H.10 Data Download Program and directs users to FRED (H.10 release page,
+  October 2026) — new vintages record the new URL and check that overlapping
+  observations are identical; if they are not, it is a different source and is
+  declared as one. When a series stops being published, targets on or after
+  `retired_since` are `unavailable` (`SOURCE_RETIRED`).
+- **Unavailable instead of guessing.** Every path above that does not end in
+  `ok`, `stale` or `fixed_conversion` ends in `unavailable` with a machine-
+  readable `reason`. A basket with any unavailable input produces no artifact
+  until a new vintage declares how to proceed.
+
+A spec may record how each input was resolved in optional, descriptive keys
+(hashed like any other extra key; they change no artifact field). An entry
+without such keys asserts that each of its inputs was observed directly on its
+date (`ok`), which is true of every shipped vintage.
+
+## Corrections and supersession
+
+- **Originals are never rewritten.** Once a vintage is published, its
+  `spec.json`, `artifact.json` and `SOURCES.md` stay byte-identical;
+  `test_vintages.py` pins their sha256. (OpenTimestamps proofs live outside
+  every hash and may be upgraded, see `docs/ANCHORING.md`.)
+- **A correction is a new vintage.** Its spec carries `supersedes`: a list of
+  `{"vintage", "artifact_hash", "reasons": [{"code", "detail"}]}`. Because the
+  key is part of the spec, the claim is bound to the correction's own
+  `input_digest`.
+- **The reverse link lives outside the original.** `data/vintages.json` lists
+  every vintage with its `artifact_hash`, `status` (`current` or `superseded`),
+  `supersedes`, `superseded_by` and machine-readable `warnings`
+  (`{"code", "detail"}`, codes in upper case, e.g. `EURO_AREA_MEMBERSHIP`). It
+  is part of no hash and is append-only: entries are added; an existing entry
+  may only gain `superseded_by` links and warnings. Tests check that the links
+  are symmetric and agree with each spec.
+- **A superseded vintage still verifies.** Verification proves that an artifact
+  reproduces from its spec, not that the spec was right. Anyone relying on a
+  vintage should check its entry in `data/vintages.json`.
+- **Known issues without a correction are warnings.** A vintage with a known
+  problem but no corrected successor stays `current` and carries the warning
+  (v0.2 carries the same 20-member euro-area warning as v0.1 until a corrected
+  PPP vintage is issued).
+
 ## 6. Reference vintages
 
 Bundled under `data/`, each with `spec.json`, `artifact.json`, and `SOURCES.md`.

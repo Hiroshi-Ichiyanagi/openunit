@@ -25,6 +25,23 @@ versions** (the `method_version` field) and to releases of this repository.
   warnings).
 - Tests: published v0.1/v0.2 files pinned by sha256 (never rewritten); v0.3
   populations = UN extract; v0.3 FX = v0.1 FX; registry consistency.
+- **`SPEC.md` "Data states and fallbacks"**: pre-declared, deterministic rules
+  for stale inputs (maximum age per source: ECB 4 days, UN WPP 1461 days, World
+  Bank PPP 1096 days), suspended rates (ECB RUB), extinct currencies with a
+  fixed conversion (BGN 1.95583 = EUR 1 from 2026-01-01), multiple official /
+  parallel rates (declared `rate_type` + `MULTIPLE_RATES` flag), permanent data
+  holes (BLS October 2025 CPI), source endpoint retirement (Fed H.10 Data
+  Download Program), and an explicit `unavailable` state with a reason code.
+- **`openunit.resolve_input`**: the pure, deterministic implementation (no
+  clock, no I/O, order-independent; not called by `build_artifact`, so no
+  artifact or hash changes) and `openunit.DECLARED_MAX_AGE_DAYS`.
+  `test_fallbacks.py` (written first, 26/26 failing before the
+  implementation) covers every state, the precedence order, validation, and
+  proves the ECB maximum age is the tightest value covering every TARGET
+  closing-day run in 2000–2199.
+- **`SPEC.md` "Corrections and supersession"**: originals never rewritten;
+  corrections as new vintages with a hashed `supersedes`; reverse links and
+  warnings in the append-only `data/vintages.json`.
 
 ### Changed
 

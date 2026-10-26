@@ -177,7 +177,7 @@ be attached later without changing any hash. See `docs/ANCHORING.md`.
 ## Project layout
 
 ```
-openunit.py                 engine: build_artifact / verify_artifact (+ demo)
+openunit.py                 engine: build_artifact / verify_artifact / resolve_input (+ demo)
 cli.py                      command-line interface
 anchor.py                   tamper-evident anchoring (offline hash-chain)
 make_vintages.py            regenerate / --verify the pinned data vintages
@@ -196,6 +196,7 @@ test_cli.py                 CLI end to end
 test_anchor.py              anchoring commitment, chaining, tamper detection
 test_independent.py         engine × independent-verifier cross-validation
 test_properties.py          randomized property / edge / tamper tests (fixed seed)
+test_fallbacks.py           data states and fallbacks (stale, suspended, fixed conversion, ...)
 SPEC.md                     specification
 ARTIFACT_FORMAT.md          byte-level spec.json / artifact.json format
 docs/ANCHORING.md           anchoring model and external timestamping

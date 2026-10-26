@@ -22,6 +22,7 @@ verify: guard
 	$(PYTHON) test_anchor.py
 	$(PYTHON) test_independent.py
 	$(PYTHON) test_properties.py
+	$(PYTHON) test_fallbacks.py
 	$(MAKE) verify-independent
 	$(PYTHON) openunit.py
 

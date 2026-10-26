@@ -38,6 +38,7 @@ jobs:
           python test_anchor.py
           python test_independent.py
           python test_properties.py
+          python test_fallbacks.py
 
       - name: Independent second-implementation verifier (no engine import)
         shell: bash
