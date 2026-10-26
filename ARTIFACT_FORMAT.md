@@ -1,7 +1,7 @@
 # Worldyard (formerly openunit) — Artifact & Spec Format
 
-**Format standard version `worldyard-artifact-2`** (draft, unreleased; it
-succeeds `openunit-artifact-1`). This document fixes the on-disk and
+**Format standard version `worldyard-artifact-2`** (succeeds
+`openunit-artifact-1`). This document fixes the on-disk and
 on-the-wire byte layout precisely enough for an independent implementation to
 reproduce Worldyard hashes exactly. The authoritative encoder is
 `worldyard.canonical`; the normative behavior is the text of this document
@@ -10,9 +10,9 @@ names the minimal third-party verifier.
 
 **What changed from `openunit-artifact-1`:** only the `method` field. It may now
 be `"worldyard"` as well as `"openunit"`, and the artifact copies it from the
-spec (§4, §6). Every `openunit-artifact-1` spec and artifact is a
-`worldyard-artifact-2` spec and artifact with the same bytes and the same
-hashes. The reverse does not hold: a `-1` verifier expects `"openunit"` and
+spec (§4, §6). Every conforming `openunit-artifact-1` spec (method `"openunit"` or absent)
+and artifact is a `worldyard-artifact-2` spec and artifact with the same bytes
+and the same hashes. The reverse does not hold: a `-1` verifier expects `"openunit"` and
 reports a `"worldyard"` artifact as a mismatch (§9).
 
 ## 1. Numbers are strings
@@ -57,7 +57,7 @@ Both hashes are SHA-256 over canonical bytes, rendered lowercase hex with a
 |---|---|---|---|
 | `method` | string | yes | `"worldyard"`, or `"openunit"` (every spec written before the rename). An absent `method` is read as `"openunit"`, as `-1` implementations did; any other value is rejected (no artifact) |
 | `method_version` | string | no | defaults to `"v0"`; e.g. `"v0.1"`, `"v0.2"` |
-| `numeraire` | string | no | defaults to `"USD"` |
+| `numeraire` | string | no | defaults to `"USD"`; PPP vintages (v0.2, v0.4) keep `"USD"` and their value is read as international dollars (`SPEC.md` §2.3) |
 | `weight_vintage` | object | yes | must contain `label` (string) and `basis` (string); any other keys are free-form provenance |
 | `basket` | array | yes | one or more entries (§5) |
 | *(any other keys)* | — | no | permitted; **included in `input_digest`** |
@@ -86,7 +86,7 @@ Built deterministically from a spec.
 |---|---|---|
 | `method` | string | copied from the spec (`"openunit"` if the spec has none) |
 | `method_version` | string | copied from the spec (default `"v0"`) |
-| `numeraire` | string | copied from the spec (default `"USD"`) |
+| `numeraire` | string | copied from the spec (default `"USD"`); for PPP vintages read as international dollars |
 | `weight_vintage_label` | string | `spec.weight_vintage.label` |
 | `weight_basis` | string | `spec.weight_vintage.basis` |
 | `baseline_value_usd` | string | `= 1` by construction |
@@ -172,7 +172,7 @@ artifact.json`, exit 0 iff every field matches). It is both the conformance
 oracle for this standard and the tool a third party can run to check a published
 value without trusting the Worldyard engine. `test_independent.py`,
 `test_properties.py` and `test_compat.py` cross-validate the engine against
-it. The `openunit-artifact-1` verifier on the published `main` branch still
+it. The `openunit-artifact-1` verifier shipped with release 0.3.0 still
 passes every vintage built before the rename; on a `"worldyard"` vintage it
 reports two differing fields, `method` and `artifact_hash` (checked
 2026-10-26).

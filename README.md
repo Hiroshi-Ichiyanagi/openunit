@@ -16,9 +16,9 @@ A deterministic, publicly verifiable, **population-weighted unit of account**.
 
 Worldyard is a *measuring stick*, not money. It does not issue a currency, hold
 reserves, or settle payments. It defines one thing precisely: a unit of value
-whose basket weights count **people**, not whichever country issues the reserve
-currency — and it does so reproducibly, so anyone can recompute the exact same
-number and the exact same hashes, byte for byte.
+whose basket weights count **people**, rather than being set by the issuer of
+any single national currency — and it does so reproducibly, so anyone can
+recompute the exact same number and the exact same hashes, byte for byte.
 
 > **Don't trust me. Verify me.**
 
@@ -47,11 +47,12 @@ number and the exact same hashes, byte for byte.
   who builds on it must check the rules that apply to them.
 - **Data terms are separate from the code licence.** Each input keeps its
   publisher's terms (each vintage's `SOURCES.md` names its publishers): the ECB's euro
-  reference rates are published "for information purposes only" and are reused
-  under the ECB's conditions (cite the ECB, state any modification;
-  <https://www.ecb.europa.eu/home/disclaimer/html/index.en.html>); UN World
-  Population Prospects data are licensed CC BY 3.0 IGO; World Bank `PA.NUS.PPP`
-  data CC BY 4.0.
+  reference rates are published "for information purposes only"
+  (<https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html>)
+  and are reused under the ECB's conditions (cite the ECB, state any
+  modification; <https://www.ecb.europa.eu/home/disclaimer/html/index.en.html>);
+  UN World Population Prospects data are licensed CC BY 3.0 IGO; World Bank
+  `PA.NUS.PPP` data CC BY 4.0.
 - **Independent.** Worldyard is not affiliated with, endorsed by, or certified
   by IOSCO, the IMF, the ECB, the United Nations, the World Bank, or any other
   authority or standard-setter. Mentions of the SDR method or of these
@@ -63,11 +64,11 @@ number and the exact same hashes, byte for byte.
 ## Why
 
 Expressing value in a single national currency bakes in the politics of who
-issues it. Worldyard counts people equally instead: one person, one vote. That
-is deliberately a **value choice, not a neutral fact** (see *On "fairness"*
-below and `SPEC.md` §10) — the point is to make the choice explicit, fixed, and
-auditable so it can be argued in the open rather than hidden inside an opaque
-index.
+issues it. Worldyard counts people equally instead: one person, one vote (a
+weighting rule, not a governance mechanism). That is deliberately a **value
+choice, not a neutral fact** (see *On "fairness"* below and `SPEC.md` §10) —
+the point is to make the choice explicit, fixed, and auditable so it can be
+argued in the open rather than hidden inside an opaque index.
 
 ## Quickstart
 
@@ -145,10 +146,10 @@ Bank `PA.NUS.PPP`** for 2024 on the valuation leg, so the unit is read in
 
 ### `v0.3-unwpp-2026-05-15` — **REAL DATA (UN primary file)** — supersedes v0.1
 
-Method v0.1's formulas (under the v0.3 input domain) and **exactly v0.1's ECB
-FX inputs**, with populations read from the UN Population Division's own
-*World Population Prospects 2024* file (medium variant, 1 July 2026) instead of
-a republication, and the euro area counted on its membership at the valuation
+Method v0.1's formulas (method version `v0.3`, under the v0.3 input domain)
+and **exactly v0.1's ECB FX inputs**, with populations read from the UN
+Population Division's own *World Population Prospects 2024* file (medium
+variant, 1 July 2026) instead of a republication, and the euro area counted on its membership at the valuation
 date: **21 states** (Bulgaria joined on 2026-01-01). The 26 UN rows used are
 committed as `data/sources/un_wpp2024_population_2026.csv` (CC BY 3.0 IGO).
 
@@ -160,12 +161,12 @@ committed as `data/sources/un_wpp2024_population_2026.csv` (CC BY 3.0 IGO).
 
 ### `v0.4-ppp-unwpp-2026-05-15` — **REAL DATA (PPP, UN primary file)** — supersedes v0.2
 
-Method v0.2's PPP valuation leg (read in **international dollars**) with
-v0.3-unwpp's populations (UN Population Division's own WPP 2024 file, euro
-area of **21** members) and World Bank `PA.NUS.PPP` for reference year 2024,
-taken from one small API response committed verbatim as
-`data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json` (CC BY 4.0, pinned by
-sha256). The nominal-FX baseline is the same ECB data as v0.2.
+Method v0.2's PPP valuation leg (method version `v0.4`; read in
+**international dollars**) with v0.3-unwpp's populations (UN Population
+Division's own WPP 2024 file, euro area of **21** members) and World Bank
+`PA.NUS.PPP` for reference year 2024, taken from one small API response
+committed verbatim as `data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json`
+(CC BY 4.0, pinned by sha256). The nominal-FX baseline is the same ECB data as v0.2.
 
 - **labelled as the World Bank labels it:** China and India are the ICP 2021
   benchmark extrapolated to 2024 by the World Bank; Japan, the United Kingdom
@@ -194,7 +195,15 @@ worldyard verify-anchor anchor.json artifact.json [--prev prev.json]
 
 After a local install (`pip install -e .`) the `worldyard` command is available
 (the old `openunit` command still works and prints a deprecation notice);
-otherwise run the same subcommands with `python3 cli.py …`.
+otherwise run the same subcommands with `python3 cli.py …`. If the old
+distribution is installed, run `pip uninstall openunit` before
+`pip install -e .`.
+
+In PPP vintages (v0.2, v0.4) the artifact's `numeraire` field stays `USD`; the
+value is in international dollars (PPP-adjusted US dollars), as the vintage's
+`weight_vintage` and `SOURCES.md` state. `show`, `build` and the demo therefore
+print such a value as "international $ (numeraire field: USD)"; this is display
+only and changes no hash (`SPEC.md` §2.3).
 
 ## Verifying someone else's published value
 
@@ -234,7 +243,7 @@ every shipped vintage with `make verify-independent` (also part of
 `make verify` and CI). If the engine were ever wrong or tampered with, this is
 the program that would say so.
 
-## Determinism guarantees
+## Determinism properties
 
 - **Standard library only** (`json`, `hashlib`, `decimal`).
 - **Exact arithmetic** with `decimal.Decimal`, precision **50**, rounding

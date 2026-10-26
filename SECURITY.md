@@ -29,8 +29,8 @@ specific:
 ## What is out of scope
 
 - The trustworthiness of the *external* inputs themselves (UN/ECB/World Bank
-  figures); Worldyard only guarantees faithful, exact computation over the inputs
-  recorded in each vintage's `SOURCES.md`.
+  figures). Worldyard only computes exactly over the inputs recorded in each
+  vintage's `SOURCES.md`; it does not vouch for the inputs themselves.
 - Backdating prevention from the offline anchor core alone — that requires an
   external public timestamp (see `docs/ANCHORING.md`).
 

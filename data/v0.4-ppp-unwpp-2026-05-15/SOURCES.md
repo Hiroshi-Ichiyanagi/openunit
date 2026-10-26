@@ -100,6 +100,7 @@ The GDP-weighted sensitivity recorded for v0.2 is not repeated here: it would ne
 
 - Population: exactly the inputs of `v0.3-unwpp-2026-05-15` -- UN Population Division, *World Population Prospects 2024*, medium variant, `TPopulation1July` for 2026 (reference date 1 July 2026), from `data/sources/un_wpp2024_population_2026.csv` (CC BY 3.0 IGO); see that vintage's `SOURCES.md` and `data/sources/SOURCES.md`.
 - Nominal FX (baseline leg): ECB euro reference rates on 2026-05-15, the same rates as v0.1, v0.2 and v0.3: USD 1.1628, JPY 184.36, GBP 0.8705, CNY 7.9194, INR 111.594 per EUR (<https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml>).
+- conversion to the USD numeraire: `usd_per_unit(C) = (USD per EUR) / (C per EUR)`, with `USD=1` and `EUR=(USD per EUR)` (as in `spec.json`, `provenance.nominal_fx`).
 
 ## Input states (SPEC.md, "Data states and fallbacks")
 

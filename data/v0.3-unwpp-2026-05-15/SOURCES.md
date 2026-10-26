@@ -1,5 +1,7 @@
 # openunit vintage `v0.3-unwpp-2026-05-15` -- sources & provenance
 
+*Worldyard was formerly called openunit; vintages built before the rename, like this one, carry the method name `openunit`, and vintages from v0.4 carry `worldyard`. The unit and its formulas are the same.*
+
 **Status: REAL DATA.** Population is read from the UN Population Division's own *World Population Prospects 2024* file (not a republication); FX is the same ECB data as `v0.1-2026-05-15`. Re-running `make_vintages.py` reproduces `spec.json` and `artifact.json` byte for byte.
 
 - `input_digest`  : `sha256:81e868cac516acdbf8da9cb0258a89a248881c58991f0cc1618d04c0e654e005`

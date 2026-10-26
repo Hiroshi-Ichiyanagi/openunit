@@ -25,6 +25,25 @@ The United Nations does not endorse Worldyard (formerly openunit).
 data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json is a World Bank API
 response (World Development Indicators, indicator PA.NUS.PPP, 2024), retrieved
 2026-10-26, made available by the World Bank under CC BY 4.0
-(https://datacatalog.worldbank.org/public-licenses#cc-by). It is unmodified.
+(https://creativecommons.org/licenses/by/4.0/; World Bank terms:
+https://datacatalog.worldbank.org/public-licenses#cc-by). It is unmodified.
 The World Bank does not endorse Worldyard (formerly openunit). The Apache License above applies
 to the code, not to third-party data.
+
+The population figures inside data/v0.1-2026-05-15 and data/v0.2-ppp-2026-05-15
+(spec.json, SOURCES.md) are United Nations World Population Prospects 2024
+figures (Copyright (c) 2024 by United Nations, CC BY 3.0 IGO) as republished by
+Worldometer (worldometers.info), which both spec.json files and v0.1's
+SOURCES.md name as the intermediary; 23 of the 25 values equal the UN file and
+two (Greece, Slovenia) differ by one person. Those vintages are superseded by
+v0.3 and v0.4, which read the UN file directly; their files are kept unchanged
+so that their hashes stay verifiable. The United Nations does not endorse
+Worldyard (formerly openunit).
+
+Euro foreign exchange reference rates in every vintage are reproduced from the
+European Central Bank (source cited in each vintage's SOURCES.md), which
+publishes them for information purposes only; the conversion to US-dollar
+cross rates, usd_per_unit(C) = (USD per EUR) / (C per EUR), is a modification
+made by Worldyard (formerly openunit). It is stated in the SOURCES.md and
+spec.json of v0.1, v0.3 and v0.4; v0.2's nominal-FX baseline applies the same
+conversion to the same 2026-05-15 rates as v0.1's valuation leg.

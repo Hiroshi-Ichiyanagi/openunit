@@ -100,7 +100,9 @@ every existing anchor verifier valid.
 
 The two published vintages (v0.1, v0.2) carry an OpenTimestamps proof committing each
 `artifact.json` to the Bitcoin blockchain, so a third party can confirm the
-artifact existed by a point in time without trusting this repository. The proofs
+artifact existed by a point in time without trusting this repository.
+`v0.3-unwpp-2026-05-15` and `v0.4-ppp-unwpp-2026-05-15` are not yet
+timestamped; their proofs will be added on release. The proofs
 are `data/v0.1-2026-05-15/artifact.json.ots` and
 `data/v0.2-ppp-2026-05-15/artifact.json.ots`; OpenTimestamps commits to the
 **bytes of the `artifact.json` file** (not the internal `artifact_hash`,

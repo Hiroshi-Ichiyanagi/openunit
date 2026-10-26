@@ -1,8 +1,18 @@
-# openunit — independent data audit
+# Worldyard (formerly openunit) — independent data audit
 
-**Status: CONFIRMED.** Every published number in the shipped vintages
+> **Status, read in order.** The 2026-06-10 audit below compared the shipped
+> numbers with the sources named *at that time* (for population: Worldometer's
+> republication). The addenda of 2026-10-26 re-checked them against the UN's
+> own file (2 of 25 populations differ by one person; the euro area had 21
+> members, not 20) and found v0.2's "ICP 2024" label wrong (the values are ICP
+> 2021 extrapolations and Eurostat-OECD annual PPPs). Nothing published was
+> rewritten; the corrections are `v0.3-unwpp` and `v0.4-ppp-unwpp`.
+
+**Status (2026-06-10): CONFIRMED against the sources named below; see the
+addenda for what changed.** Every published number in the shipped vintages
 (`data/v0.1-2026-05-15`, `data/v0.2-ppp-2026-05-15`) was independently
-re-derived from its primary source and matches, with **zero mismatches**.
+re-derived from the source named for it at the time and matches, with **zero
+mismatches**.
 
 - **Audit date:** 2026-06-10 *(addendum 2026-06-13: verbatim normalization — see
   the final section; the v0.1 hashes quoted below are the pre-normalization
@@ -79,7 +89,7 @@ re-summed euro-area total is `347740855`, equal to the pinned value. ✅
 
 ---
 
-## 3. PPP — World Bank `PA.NUS.PPP` (ICP 2024) → **CONFIRMED**
+## 3. PPP — World Bank `PA.NUS.PPP` (reference year 2024; labelled "ICP 2024" at the time — see the 2026-10-26 addendum) → **CONFIRMED against WDI April 2026**
 
 - **Source:** World Bank, *PPP conversion factor, GDP (LCU per international $)*,
   indicator `PA.NUS.PPP` (ICP). License CC BY-4.0.
@@ -98,8 +108,9 @@ re-summed euro-area total is `347740855`, equal to the pinned value. ✅
 - **Latest common year:** across the 25 series, 2022/2023/**2024** are all
   non-empty; **2025 has 2 gaps** (2 of 25 series null). So **2024 is the latest
   year for which every basket economy and every euro-area member has a value** —
-  matching `PPP_YEAR = "2024"`. No fallback values are needed (every member is a
-  genuine 2024 figure).
+  matching `PPP_YEAR = "2024"`. No fallback values are needed (every member has a
+  published 2024 value; these are extrapolations/annual PPPs, not ICP
+  benchmark values — addendum 2026-10-26).
 
 ---
 
@@ -145,7 +156,8 @@ in `data/v0.2-ppp-2026-05-15/SOURCES.md`.
 | euro-area blend recompute | 1 (full precision) | 0 |
 | **total** | **61** | **0** |
 
-Every published number is faithful to its named primary source. **Confirmed.**
+Every published number is faithful to the source named in its `SOURCES.md`
+(for v0.1/v0.2 populations, a republisher — see the addenda). **Confirmed.**
 
 *Reproduce this audit by re-fetching the three endpoints above and comparing
 against `make_vintages.py` / each vintage's `SOURCES.md`.*

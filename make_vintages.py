@@ -1001,6 +1001,10 @@ def sources_v0_3(spec, art, un, members, ea, v01_art, mismatches, added):
     q6 = Decimal("0.000001")
     lines = []
     lines.append("# openunit vintage `%s` -- sources & provenance\n" % V0_3_ID)
+    lines.append("*Worldyard was formerly called openunit; vintages built "
+                 "before the rename, like this one, carry the method name "
+                 "`openunit`, and vintages from v0.4 carry `worldyard`. The "
+                 "unit and its formulas are the same.*\n")
     lines.append("**Status: REAL DATA.** Population is read from the UN "
                  "Population Division's own *World Population Prospects 2024* "
                  "file (not a republication); FX is the same ECB data as "
@@ -1717,6 +1721,9 @@ def sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for, v02_art,
                      "%s %s" % (c, ECB["valuation"]["per_eur"][c])
                      for c in ("USD", "JPY", "GBP", "CNY", "INR"))
                  + " per EUR (<%s>)." % spec["provenance"]["nominal_fx"]["url"])
+    lines.append("- conversion to the USD numeraire: `usd_per_unit(C) = (USD "
+                 "per EUR) / (C per EUR)`, with `USD=1` and `EUR=(USD per "
+                 "EUR)` (as in `spec.json`, `provenance.nominal_fx`).")
     lines.append("")
 
     st = spec["provenance"]["input_states"]

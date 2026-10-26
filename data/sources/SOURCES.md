@@ -9,8 +9,8 @@ not a vintage (it has no `spec.json`).
 
 ## `un_wpp2024_population_2026.csv`
 
-Total population on 1 July 2026 (medium variant) for the 26 locations openunit
-needs: China, India, Japan, the United Kingdom, the United States of America,
+Total population on 1 July 2026 (medium variant) for the 26 locations Worldyard
+(formerly openunit) needs: China, India, Japan, the United Kingdom, the United States of America,
 and the 21 euro-area member states on 2026-05-15 (Austria, Belgium, Bulgaria,
 Croatia, Cyprus, Estonia, Finland, France, Germany, Greece, Ireland, Italy,
 Latvia, Lithuania, Luxembourg, Malta, the Netherlands, Portugal, Slovakia,
@@ -39,8 +39,9 @@ available under a Creative Commons license CC BY 3.0 IGO:
 <http://creativecommons.org/licenses/by/3.0/igo/>. Suggested citation: United
 Nations, Department of Economic and Social Affairs, Population Division (2024).
 *World Population Prospects 2024, Online Edition.* **Changes made by
-openunit:** 26 rows selected; thousands converted to persons in an added
-column; no value modified. The United Nations does not endorse openunit.
+Worldyard (formerly openunit):** 26 rows selected; thousands converted to
+persons in an added column; no value modified. The United Nations does not
+endorse Worldyard (formerly openunit).
 
 **Interim update.** The WPP 2024 interim update released on 19 January 2026
 revises Togo only; none of the locations in this extract changed. The next WPP
@@ -72,7 +73,7 @@ reformatting).
 | WDI last updated | 2026-10-08 (the response's `lastupdated`) |
 | size | 7316 bytes |
 | sha256 | `b4db34d4ee9bfef0aa0efbc116bd587cbd480f9cfbfa34c85c845f42fe7aed0d` |
-| licence | CC BY 4.0, <https://datacatalog.worldbank.org/public-licenses#cc-by> |
+| licence | CC BY 4.0, <https://creativecommons.org/licenses/by/4.0/>; World Bank terms: <https://datacatalog.worldbank.org/public-licenses#cc-by> |
 | used by | `data/v0.4-ppp-unwpp-2026-05-15/` |
 
 The values are JSON numbers; `make_vintages.py` reads them as their exact
@@ -85,7 +86,8 @@ whose 2024 values are the ICP 2021 benchmark extrapolated by the World Bank
 country metadata: currency unit Euro, 1 EUR = 1.95583 BGN from 2026-01-01).
 
 **Licence and attribution.** World Bank, World Development Indicators,
-`PA.NUS.PPP`, CC BY 4.0. Unmodified. The World Bank does not endorse openunit.
+`PA.NUS.PPP`, CC BY 4.0. Unmodified. The World Bank does not endorse Worldyard
+(formerly openunit).
 
 A new request to the same URL may return a later WDI release with revised
 values (the World Bank revised five of v0.2's 2024 values between its April and

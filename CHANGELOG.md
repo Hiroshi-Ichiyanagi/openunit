@@ -5,7 +5,7 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Worldyard is a specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
-## [0.4.0] — unreleased (draft on branch `feat/v0.4-sources-fallbacks`, not published)
+## [0.4.0] — YYYY-MM-DD
 
 ### Renamed: openunit is now Worldyard
 
@@ -29,7 +29,7 @@ versions** (the `method_version` field) and to releases of this repository.
   (part of every anchor commitment) and the registry format
   `openunit-vintage-registry-1`.
 - The GitHub repository and the URLs in `pyproject.toml` keep the old name
-  until the public rename is approved.
+  until the repository is renamed; the URLs will be updated then.
 
 ### Deprecated
 
@@ -38,6 +38,9 @@ versions** (the `method_version` field) and to releases of this repository.
   openunit.py` still runs the demo.
 - The `openunit` command (`cli:main_openunit`): same subcommands, plus a
   notice on stderr.
+- If the old distribution is installed, run `pip uninstall openunit` before
+  `pip install -e .`: both distributions provide the same modules and the
+  `openunit` command.
 
 ### Added
 
@@ -87,8 +90,7 @@ versions** (the `method_version` field) and to releases of this repository.
 - **`worldyard.resolve_input`**: the pure, deterministic implementation (no
   clock, no I/O, order-independent; not called by `build_artifact`, so no
   artifact or hash changes) and `worldyard.DECLARED_MAX_AGE_DAYS`.
-  `test_fallbacks.py` (written first, 26/26 failing before the
-  implementation) covers every state, the precedence order, validation, and
+  `test_fallbacks.py` covers every state, the precedence order, validation, and
   proves the ECB maximum age is the tightest value covering every TARGET
   closing-day run in 2000–2199.
 - **`SPEC.md` "Corrections and supersession"**: originals never rewritten;
@@ -102,6 +104,9 @@ versions** (the `method_version` field) and to releases of this repository.
 - The demo and `worldyard build` print the artifact's own method name
   ("1 openunit = …" for vintages built before the rename); `show` prints
   "1 unit".
+- PPP vintages (v0.2, v0.4) are printed in "international $" by `show`,
+  `build`, the demo and `verify_independent.py` (display only); their hashed
+  `numeraire` field stays `USD` (`SPEC.md` §2.3).
 
 ### Found (no published file changed)
 

@@ -27,7 +27,7 @@ byte.** Contributions are welcome as long as they preserve that property.
 ```sh
 python3 test_determinism_guard.py     # 4 invariants, standalone
 python3 make_vintages.py --verify     # vintages reproduce, byte for byte
-python3 -m pytest -q                  # full suite (22 tests)
+python3 -m pytest -q                  # full suite
 ```
 
 `make verify` and `make test` wrap these (see the `Makefile`). CI runs the same

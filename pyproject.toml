@@ -14,13 +14,12 @@ keywords = ["unit-of-account", "deterministic", "reproducible", "SDR", "index", 
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "Intended Audience :: Financial and Insurance Industry",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering",
 ]
 # No runtime dependencies on purpose: standard library only.
@@ -29,8 +28,8 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 
-# The repository still has its old name; it will move when the public rename
-# is approved, and these URLs will be updated then.
+# The repository keeps its old name until it is renamed; the URLs will be
+# updated then.
 [project.urls]
 Homepage = "https://github.com/Hiroshi-Ichiyanagi/openunit"
 Repository = "https://github.com/Hiroshi-Ichiyanagi/openunit"

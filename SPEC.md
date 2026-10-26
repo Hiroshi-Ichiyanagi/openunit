@@ -13,15 +13,15 @@ before the rename keep `"openunit"` (and therefore every hash they had); new
 vintages carry `"worldyard"` (§4.1). Where this document quotes a value as
 "1 openunit", it is the same unit as "1 worldyard".
 
-This document specifies the method, the determinism guarantees, the on-disk
+This document specifies the method, the determinism properties, the on-disk
 formats, and the verification procedure. The byte-level field layout lives in
 [`ARTIFACT_FORMAT.md`](ARTIFACT_FORMAT.md); the anchoring model lives in
 [`docs/ANCHORING.md`](docs/ANCHORING.md).
 
 ## 1. Purpose and non-goals
 
-**Purpose.** Provide a neutral, transparent way to express value that counts
-*people* equally rather than privileging whichever country issues the reserve
+**Purpose.** Provide a transparent, reproducible way to express value that
+counts *people* equally instead of tying it to the issuer of any single national
 currency. The reference value is reported in a numeraire (USD here) only as a
 readable denomination; the *unit itself* is defined by the basket, not by any
 single national currency.
@@ -91,6 +91,16 @@ by the bundled v0.2 vintage and by its correction, `v0.4-ppp-unwpp` (method
 version `v0.4`: the same formulas, under the v0.3 input domain, with every input
 resolved under "Data states and fallbacks" and the resolution recorded in the
 spec).
+
+In PPP vintages (v0.2, v0.4) the artifact's `numeraire` field stays `USD`; the
+value is in international dollars (PPP-adjusted US dollars), as the vintage's
+`weight_vintage` and `SOURCES.md` state. For display only, the CLI (`show`,
+`build`), the demo and `verify_independent.py` print such a value as
+"international $ (numeraire field: USD)". From a spec they recognise a PPP
+valuation leg exactly: every basket entry records `ppp_factor_lcu_per_intl_usd`
+and its `fx_valuation_usd_per_unit` equals `1 / ppp_factor_lcu_per_intl_usd`.
+From an artifact alone (`show`) the only hint is the token `PPP` in
+`weight_vintage_label`. No hashed field changes.
 
 ## 3. Determinism
 
@@ -290,18 +300,21 @@ never interpolated or averaged, and no undeclared source is substituted.
   unofficial rate is used only if a vintage declares it as its source.
 - **Permanent data holes.** A period that will never be published is declared
   as a hole and is `unavailable` (`PERMANENT_HOLE`) — it is not interpolated
-  and not filled from the neighbouring periods. Example: after the 2025 lapse
-  in US appropriations, BLS issued no October 2025 CPI release and did not
-  publish October 2025 indexes for most CPI series; it chose not to collect the
-  data retroactively. (Worldyard uses no CPI today; the rule applies to any
+  and not filled from the neighbouring periods. Example: during the 2025 lapse
+  in US appropriations, BLS did not collect CPI survey data for October 2025
+  and was unable to collect them retroactively; its November 2025 CPI release
+  shows no October 2025 values for most series (BLS, CPI news release of
+  18 December 2025, <https://www.bls.gov/news.release/archives/cpi_12182025.htm>,
+  read 2026-10-26). (Worldyard uses no CPI today; the rule applies to any
   input.)
 - **Source endpoint retirement.** A vintage never depends on an endpoint: its
   raw numbers are reproduced in its `SOURCES.md` and hashed in its spec, so it
   stays verifiable offline after a URL disappears. A series is identified by
   publisher, series and definition, not by URL. When the same series moves to a
   new endpoint — the Federal Reserve has announced the eventual retirement of
-  the H.10 Data Download Program and directs users to FRED (H.10 release page,
-  October 2026) — new vintages record the new URL and check that overlapping
+  its Data Download Program, which serves the H.10 exchange rates, and directs
+  users to FRED (H.10 release page, <https://www.federalreserve.gov/releases/h10/>,
+  read 2026-10-26) — new vintages record the new URL and check that overlapping
   observations are identical; if they are not, it is a different source and is
   declared as one. When a series stops being published, targets on or after
   `retired_since` are `unavailable` (`SOURCE_RETIRED`).
@@ -349,7 +362,8 @@ Bundled under `data/`, each with `spec.json`, `artifact.json`, and `SOURCES.md`.
 Regenerate or check them with `python3 make_vintages.py [--verify]`.
 
 - **`v0.1-2026-05-15` (REAL).** One person, one vote on real inputs: UN World
-  Population Prospects 2024 (2026 estimate) and ECB euro reference rates
+  Population Prospects 2024 (2026 medium-variant projection; populations via
+  Worldometer's republication, see v0.3) and ECB euro reference rates
   (baseline `2026-01-09`, valuation `2026-05-15`). `1 openunit = 0.985631 USD`.
   The euro area is the sum of its 20 member states; the USD numeraire rate for
   each currency is `usd_per_unit(C) = (USD per EUR) / (C per EUR)`. The raw ECB
@@ -420,9 +434,9 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
   economies; that is what the PPP leg (v0.2) addresses.
 - PPP factors for years after the latest ICP benchmark (2021) are provisional:
   the World Bank extrapolates them for most economies and revises them (it
-  revised China and India between its April and July 2026 releases) and will
-  replace them when ICP 2024 results are published. A vintage pins the values
-  of one release and names it.
+  revised five of v0.2's 25 values between its April and July 2026 releases,
+  China and India most) and will replace them when ICP 2024 results are
+  published. A vintage pins the values of one release and names it.
 - "Equal" weighting is **not** a neutral fact (see §10).
 
 ## 9. Roadmap
@@ -438,7 +452,9 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
   third-party verifier** (`verify_independent.py`, engine-free, stdlib-only).
 - ✅ **Public timestamping** for anchors: the published vintages (v0.1, v0.2) carry
   OpenTimestamps proofs confirmed in the Bitcoin blockchain
-  (`docs/ANCHORING.md`); the core stays offline.
+  (`docs/ANCHORING.md`); the core stays offline. `v0.3-unwpp` and
+  `v0.4-ppp-unwpp` are not yet timestamped; their proofs will be added on
+  release.
 
 ## 10. On "fairness"
 
