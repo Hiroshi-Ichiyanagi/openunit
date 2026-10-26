@@ -1,11 +1,19 @@
-# openunit — Artifact & Spec Format
+# Worldyard (formerly openunit) — Artifact & Spec Format
 
-**Format standard version `openunit-artifact-1`.** This document fixes the
-on-disk and on-the-wire byte layout precisely enough for an independent
-implementation to reproduce openunit hashes exactly. The authoritative encoder
-is `openunit.canonical`; the normative behavior is the text of this document
+**Format standard version `worldyard-artifact-2`** (draft, unreleased; it
+succeeds `openunit-artifact-1`). This document fixes the on-disk and
+on-the-wire byte layout precisely enough for an independent implementation to
+reproduce Worldyard hashes exactly. The authoritative encoder is
+`worldyard.canonical`; the normative behavior is the text of this document
 plus `SPEC.md`. Sections 1–8 are the format; section 9 states conformance and
 names the minimal third-party verifier.
+
+**What changed from `openunit-artifact-1`:** only the `method` field. It may now
+be `"worldyard"` as well as `"openunit"`, and the artifact copies it from the
+spec (§4, §6). Every `openunit-artifact-1` spec and artifact is a
+`worldyard-artifact-2` spec and artifact with the same bytes and the same
+hashes. The reverse does not hold: a `-1` verifier expects `"openunit"` and
+reports a `"worldyard"` artifact as a mismatch (§9).
 
 ## 1. Numbers are strings
 
@@ -47,7 +55,7 @@ Both hashes are SHA-256 over canonical bytes, rendered lowercase hex with a
 
 | key | type | required | notes |
 |---|---|---|---|
-| `method` | string | yes | `"openunit"` |
+| `method` | string | yes | `"worldyard"`, or `"openunit"` (every spec written before the rename). An absent `method` is read as `"openunit"`, as `-1` implementations did; any other value is rejected (no artifact) |
 | `method_version` | string | no | defaults to `"v0"`; e.g. `"v0.1"`, `"v0.2"` |
 | `numeraire` | string | no | defaults to `"USD"` |
 | `weight_vintage` | object | yes | must contain `label` (string) and `basis` (string); any other keys are free-form provenance |
@@ -76,13 +84,13 @@ Built deterministically from a spec.
 
 | key | type | notes |
 |---|---|---|
-| `method` | string | `"openunit"` |
+| `method` | string | copied from the spec (`"openunit"` if the spec has none) |
 | `method_version` | string | copied from the spec (default `"v0"`) |
 | `numeraire` | string | copied from the spec (default `"USD"`) |
 | `weight_vintage_label` | string | `spec.weight_vintage.label` |
 | `weight_basis` | string | `spec.weight_vintage.basis` |
 | `baseline_value_usd` | string | `= 1` by construction |
-| `value_usd` | string | value of 1 openunit on the valuation leg |
+| `value_usd` | string | value of 1 unit on the valuation leg |
 | `basket` | array | per-entry rows (§7) |
 | `input_digest` | string | `sha256:` of the spec |
 | `artifact_hash` | string | `sha256:` of the artifact minus this field |
@@ -112,7 +120,8 @@ Present **only when at least one basket entry carries `weight_multiplier`**:
 
 This conditional emission is the backward-compatibility rule: with no
 multipliers anywhere, the two extra keys are absent and the artifact bytes match
-plain openunit v0 exactly.
+plain openunit v0 exactly. (The same holds across the rename: a spec whose
+`method` is `"openunit"` gives the artifact it always gave.)
 
 ## 8. Worked reference
 
@@ -126,15 +135,16 @@ artifact_hash: sha256:433d5e9560f8dcf928c6d2aff9c48ecb9eba558d19fc8eff191056f3f1
 The real `v0.1-2026-05-15` vintage must produce
 `artifact_hash sha256:1e615cf7…9a3a`, the real-PPP `v0.2-ppp-2026-05-15`
 vintage (World Bank `PA.NUS.PPP`, 2024) `sha256:566c95c1…b97a`, and the
-UN-primary-file `v0.3-unwpp-2026-05-15` vintage `sha256:0fe13c83…b7af`, and the
-corrected PPP vintage `v0.4-ppp-unwpp-2026-05-15` `sha256:db4cd6e1…221d`. Every
-bundled vintage is reproduced byte-for-byte by `test_vintages.py`. (A spec's
+UN-primary-file `v0.3-unwpp-2026-05-15` vintage `sha256:0fe13c83…b7af` (all
+three with method `"openunit"`), and the corrected PPP vintage
+`v0.4-ppp-unwpp-2026-05-15` (method `"worldyard"`) `sha256:d0fa4776…e175`.
+Every bundled vintage is reproduced byte-for-byte by `test_vintages.py`. (A spec's
 optional `supersedes` key, like every other extra key, is hashed as part of the
 spec per §4; it changes no artifact field.)
 
 ## 9. Conformance and the reference verifier
 
-An implementation **conforms** to `openunit-artifact-1` iff, for every spec it
+An implementation **conforms** to `worldyard-artifact-2` iff, for every spec it
 accepts, it produces an artifact identical — byte for byte under the canonical
 encoding (§2) — to one built per §§1–8 and `SPEC.md`, and computes the same
 `input_digest` and `artifact_hash`. Concretely, a conforming implementation:
@@ -148,20 +158,30 @@ encoding (§2) — to one built per §§1–8 and `SPEC.md`, and computes the sa
    entry carries a multiplier (the backward-compatibility rule);
 4. enforces the input domain of `SPEC.md` ("Input domain"): every `population`
    `≥ 0`, total population `> 0`, total effective weight `> 0`, every FX rate
-   `> 0`; otherwise it produces no artifact.
+   `> 0`; otherwise it produces no artifact;
+5. copies `method` from the spec, reading an absent one as `"openunit"`, and
+   produces no artifact for a `method` other than `"openunit"` or
+   `"worldyard"` (§4, §6).
 
 **Minimal third-party verifier.** `verify_independent.py` (bundled) is a second
 implementation of this standard written from `SPEC.md` and this document alone —
-it never imports `openunit`, `cli`, or `anchor`, and uses only the standard
+it never imports `worldyard`, `openunit`, `cli`, or `anchor`, and uses only the standard
 library. It re-derives every field and both hashes from a spec and compares them
 against a published artifact (`python3 verify_independent.py spec.json
 artifact.json`, exit 0 iff every field matches). It is both the conformance
 oracle for this standard and the tool a third party can run to check a published
-value without trusting the openunit engine. `test_independent.py` and
-`test_properties.py` cross-validate the engine against it.
+value without trusting the Worldyard engine. `test_independent.py`,
+`test_properties.py` and `test_compat.py` cross-validate the engine against
+it. The `openunit-artifact-1` verifier on the published `main` branch still
+passes every vintage built before the rename; on a `"worldyard"` vintage it
+reports two differing fields, `method` and `artifact_hash` (checked
+2026-10-26).
 
-**Versioning.** This is `openunit-artifact-1`. A future revision that changes
-the byte layout, the field set, the hashing, or the input domain in a
-hash-affecting way increments the standard version (`-2`, …); changes that do
-not affect any byte (documentation, new optional descriptive spec keys, which
-are already hashed transparently per §4) stay within `-1`.
+**Versioning.** This is `worldyard-artifact-2`. It increments
+`openunit-artifact-1` because it changes the input domain and the artifact
+bytes for new specs (the `method` value), even though no `-1` artifact
+changes. A future revision that changes the byte layout, the field set, the
+hashing, or the input domain in a hash-affecting way increments the standard
+version again (`-3`, …); changes that do not affect any byte (documentation,
+new optional descriptive spec keys, which are already hashed transparently per
+§4) stay within `-2`.

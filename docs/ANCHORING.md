@@ -1,16 +1,17 @@
-# openunit — Anchoring
+# Worldyard (formerly openunit) — Anchoring
 
 Anchoring lets a publisher make a small, tamper-evident claim:
 
 > *this exact artifact existed by this point in time, and has not been silently
 > revised since.*
 
-That is all a measuring stick needs. openunit's value is **reproducibility, not
+That is all a measuring stick needs. Worldyard's value is **reproducibility, not
 authority**, so anchoring deliberately does the minimum and stays auditable.
 
 ## What the core does (offline, keyless, deterministic)
 
-`anchor.py` (and `openunit anchor` / `openunit verify-anchor`) builds an
+`anchor.py` (and `worldyard anchor` / `worldyard verify-anchor`; the old
+`openunit` command still works) builds an
 **anchor record**: a deterministic SHA-256 commitment over an `artifact_hash`,
 optionally chained onto a previous anchor to form an append-only log.
 
@@ -38,9 +39,9 @@ the chain — reordering, dropping, or altering a record — fails verification,
 because the commitments no longer line up.
 
 ```sh
-openunit anchor artifact.json -o anchor-000.json --label "v0.1 published"
-openunit anchor next.json     -o anchor-001.json --prev anchor-000.json
-openunit verify-anchor anchor-001.json next.json --prev anchor-000.json
+worldyard anchor artifact.json -o anchor-000.json --label "v0.1 published"
+worldyard anchor next.json     -o anchor-001.json --prev anchor-000.json
+worldyard verify-anchor anchor-001.json next.json --prev anchor-000.json
 ```
 
 `verify_anchor` checks that the record commits to *this* artifact, that the
@@ -80,7 +81,11 @@ The proof goes in the record's `external_proof` field:
 never breaks `verify_anchor`. This lets you anchor immediately and obtain the
 slower public timestamp afterwards. Verifying the external proof itself is done
 with the corresponding external tool (e.g. the OpenTimestamps client), not by
-openunit.
+Worldyard.
+
+The record `version` stays `"openunit-anchor-1"` after the rename: it is part
+of every commitment, and keeping it keeps every existing anchor record and
+every existing anchor verifier valid.
 
 ## Threat model in one line
 
@@ -93,21 +98,21 @@ openunit.
 
 ## Third-party timestamp (OpenTimestamps)
 
-The two shipped vintages carry an OpenTimestamps proof committing each
+The two published vintages (v0.1, v0.2) carry an OpenTimestamps proof committing each
 `artifact.json` to the Bitcoin blockchain, so a third party can confirm the
 artifact existed by a point in time without trusting this repository. The proofs
 are `data/v0.1-2026-05-15/artifact.json.ots` and
 `data/v0.2-ppp-2026-05-15/artifact.json.ots`; OpenTimestamps commits to the
-**bytes of the `artifact.json` file** (not openunit's internal `artifact_hash`,
+**bytes of the `artifact.json` file** (not the internal `artifact_hash`,
 which is a separate, in-document hash), so verification needs the exact file the
 proof was made from. To check one — using only the standard OpenTimestamps
-client, never openunit — run `ots verify data/v0.1-2026-05-15/artifact.json.ots`
+client, never Worldyard — run `ots verify data/v0.1-2026-05-15/artifact.json.ots`
 (it locates `data/v0.1-2026-05-15/artifact.json` automatically). A proof is
 created as a *calendar commitment* and is initially **pending** Bitcoin
 confirmation; once the calendars fold it into a block (typically hours to a day
 later), `ots upgrade data/v0.1-2026-05-15/artifact.json.ots` rewrites the `.ots`
 with the Bitcoin attestation and `ots verify` then reports the confirming block
-height and time. The `.ots` files live outside every openunit hash, so adding or
+height and time. The `.ots` files live outside every Worldyard hash, so adding or
 upgrading them changes no `artifact_hash` and no `input_digest`.
 
 Both shipped proofs have been upgraded to **Bitcoin confirmation**: they carry

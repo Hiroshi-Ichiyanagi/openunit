@@ -18,7 +18,7 @@ import glob
 import hashlib
 from decimal import Decimal, localcontext, ROUND_HALF_EVEN
 
-import openunit
+import worldyard
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,7 +38,7 @@ VINTAGE_ARTIFACT_HASH = {
     "v0.3-unwpp-2026-05-15":
         "sha256:0fe13c839711bd60c3f87df59c84b47517bbaf4e8141d52dee5d86c42666b7af",
     "v0.4-ppp-unwpp-2026-05-15":
-        "sha256:db4cd6e15afa6346f76dfee49125ba00151d52d4e5bb917e78ddc9be98a5221d",
+        "sha256:d0fa47764cc918bff0d567eb6528d7f8708f6c7e7ea143f6034004f8af69e175",
 }
 
 # Published vintages are never rewritten (SPEC.md, "Corrections and
@@ -69,10 +69,10 @@ def _load(p):
 
 def test_v0_sample_backward_compatible():
     spec = _load(os.path.join(HERE, "sample_input.json"))
-    art = openunit.build_artifact(spec)
+    art = worldyard.build_artifact(spec)
     assert art["input_digest"] == V0_INPUT_DIGEST
     assert art["artifact_hash"] == V0_ARTIFACT_HASH
-    assert openunit.verify_artifact(art, spec)
+    assert worldyard.verify_artifact(art, spec)
 
 
 def test_all_vintages_reproduce():
@@ -82,9 +82,9 @@ def test_all_vintages_reproduce():
         d = os.path.dirname(spec_p)
         spec = _load(spec_p)
         art_disk = _load(os.path.join(d, "artifact.json"))
-        art_built = openunit.build_artifact(spec)
+        art_built = worldyard.build_artifact(spec)
         assert art_built == art_disk, "vintage %s does not reproduce" % d
-        assert openunit.verify_artifact(art_disk, spec), \
+        assert worldyard.verify_artifact(art_disk, spec), \
             "vintage %s fails verification" % d
 
 
@@ -314,13 +314,13 @@ def test_v0_4_input_states_resolve():
     st = spec["provenance"]["input_states"]
     for key in ("ecb_fx", "population", "ppp"):
         s = st[key]
-        r = openunit.resolve_input(
+        r = worldyard.resolve_input(
             st["target"],
             {"observations": [{"date": s["observation_date"], "value": "1"}]},
-            openunit.DECLARED_MAX_AGE_DAYS[s["source"]])
+            worldyard.DECLARED_MAX_AGE_DAYS[s["source"]])
         assert r["state"] == s["state"] != "unavailable", key
         assert r["age_days"] == s["age_days"] and r["flags"] == s["flags"], key
-        assert s["max_age_days"] == str(openunit.DECLARED_MAX_AGE_DAYS[s["source"]])
+        assert s["max_age_days"] == str(worldyard.DECLARED_MAX_AGE_DAYS[s["source"]])
     assert st["ecb_fx"]["state"] == "ok"
 
 

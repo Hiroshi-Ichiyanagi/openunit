@@ -3,14 +3,14 @@ requires = ["setuptools>=84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "openunit"
-version = "0.3.0"
-description = "A deterministic, publicly verifiable, population-weighted unit of account."
+name = "worldyard"
+version = "0.4.0.dev0"
+description = "Worldyard (formerly openunit): a deterministic, publicly verifiable, population-weighted unit of account."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Hiroshi Ichiyanagi" }]
-keywords = ["unit-of-account", "deterministic", "reproducible", "SDR", "index", "verifiable"]
+keywords = ["unit-of-account", "deterministic", "reproducible", "SDR", "index", "verifiable", "worldyard", "openunit"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -29,18 +29,22 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 
+# The repository still has its old name; it will move when the public rename
+# is approved, and these URLs will be updated then.
 [project.urls]
 Homepage = "https://github.com/Hiroshi-Ichiyanagi/openunit"
 Repository = "https://github.com/Hiroshi-Ichiyanagi/openunit"
 Issues = "https://github.com/Hiroshi-Ichiyanagi/openunit/issues"
 
 [project.scripts]
-openunit = "cli:main"
+worldyard = "cli:main"
+openunit = "cli:main_openunit"   # deprecated alias, prints a notice on stderr
 
 [tool.setuptools]
 # Flat single-file modules at the repository root (not a package directory),
-# which keeps the verify command backward compatible.
-py-modules = ["openunit", "cli", "anchor"]
+# which keeps the verify command backward compatible. `openunit` is a
+# deprecated alias module: `import openunit` returns the worldyard module.
+py-modules = ["worldyard", "openunit", "cli", "anchor"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

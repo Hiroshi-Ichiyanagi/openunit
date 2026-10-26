@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Determinism & integrity guard for openunit (v0).
+Determinism & integrity guard for the Worldyard (formerly openunit) engine.
 
 Run directly:   python3 test_determinism_guard.py
 Or with pytest: pytest test_determinism_guard.py
@@ -21,7 +21,7 @@ import json
 import inspect
 from decimal import Decimal, localcontext
 
-import openunit
+import worldyard
 
 
 def load_spec(path="sample_input.json"):
@@ -31,24 +31,24 @@ def load_spec(path="sample_input.json"):
 
 def test_same_input_same_output():
     spec = load_spec()
-    a1 = openunit.build_artifact(spec)
-    a2 = openunit.build_artifact(copy.deepcopy(spec))
+    a1 = worldyard.build_artifact(spec)
+    a2 = worldyard.build_artifact(copy.deepcopy(spec))
     assert a1 == a2, "identical input produced different artifacts"
     assert a1["artifact_hash"] == a2["artifact_hash"], "artifact_hash not reproducible"
     assert a1["input_digest"] == a2["input_digest"], "input_digest not reproducible"
     # surviving a JSON round-trip must not change the hashes
     a3 = json.loads(json.dumps(a1))
     assert a3["artifact_hash"] == a1["artifact_hash"], "hash unstable across JSON"
-    assert openunit.verify_artifact(a1, spec) is True
+    assert worldyard.verify_artifact(a1, spec) is True
 
 
 def test_no_wall_clock_read():
     # (a) static: the source must not reference the clock at all
-    src = inspect.getsource(openunit)
+    src = inspect.getsource(worldyard)
     forbidden = ("import time", "import datetime", "from time", "from datetime",
                  ".now(", ".utcnow(", ".today(", "monotonic", "perf_counter")
     found = [tok for tok in forbidden if tok in src]
-    assert not found, "clock references found in openunit source: %s" % found
+    assert not found, "clock references found in worldyard source: %s" % found
 
     # (b) runtime control: poison time.* then a build must still succeed
     import time as _time
@@ -61,9 +61,9 @@ def test_no_wall_clock_read():
         for n in saved:
             setattr(_time, n, boom)
         spec = load_spec()
-        artifact = openunit.build_artifact(spec)
+        artifact = worldyard.build_artifact(spec)
         assert artifact["value_usd"], "build produced no value"
-        assert openunit.verify_artifact(artifact, spec) is True
+        assert worldyard.verify_artifact(artifact, spec) is True
     finally:
         for n, v in saved.items():
             setattr(_time, n, v)
@@ -71,29 +71,29 @@ def test_no_wall_clock_read():
 
 def test_tamper_is_detected():
     spec = load_spec()
-    good = openunit.build_artifact(spec)
-    assert openunit.verify_artifact(good, spec) is True
+    good = worldyard.build_artifact(spec)
+    assert worldyard.verify_artifact(good, spec) is True
 
     # (a) flip the value, leave the hash -> internal inconsistency
     bad = copy.deepcopy(good)
     bad["value_usd"] = str(Decimal(bad["value_usd"]) + Decimal("0.000001"))
-    assert openunit.verify_artifact(bad, spec) is False
+    assert worldyard.verify_artifact(bad, spec) is False
 
     # (b) flip a weight inside the basket
     bad2 = copy.deepcopy(good)
     bad2["basket"][0]["population_share"] = "0.999999"
-    assert openunit.verify_artifact(bad2, spec) is False
+    assert worldyard.verify_artifact(bad2, spec) is False
 
     # (c) pair the artifact with a different spec
     spec2 = copy.deepcopy(spec)
     spec2["basket"][0]["population"] = str(
         int(spec2["basket"][0]["population"]) + 1)
-    assert openunit.verify_artifact(good, spec2) is False
+    assert worldyard.verify_artifact(good, spec2) is False
 
 
 def test_pinned_weights_equal_population_share():
     spec = load_spec()
-    artifact = openunit.build_artifact(spec)
+    artifact = worldyard.build_artifact(spec)
     with localcontext() as ctx:
         ctx.prec = 60
         tol = Decimal("1e-30")

@@ -3,7 +3,7 @@ PYTHON ?= python3
 .PHONY: help verify verify-independent test guard vintages demo install clean
 
 help:
-	@echo "openunit make targets:"
+	@echo "Worldyard (formerly openunit) make targets:"
 	@echo "  make verify              determinism guard + vintages reproduce + demo (no deps)"
 	@echo "  make verify-independent  re-verify every vintage with the independent verifier"
 	@echo "  make test                full pytest suite"
@@ -23,8 +23,9 @@ verify: guard
 	$(PYTHON) test_independent.py
 	$(PYTHON) test_properties.py
 	$(PYTHON) test_fallbacks.py
+	$(PYTHON) test_compat.py
 	$(MAKE) verify-independent
-	$(PYTHON) openunit.py
+	$(PYTHON) worldyard.py
 
 # Second-implementation check: every shipped vintage (each data/*/ directory
 # holding a spec.json; data/sources/ holds source extracts, not vintages) must
@@ -45,7 +46,7 @@ vintages:
 	$(PYTHON) make_vintages.py
 
 demo:
-	$(PYTHON) openunit.py
+	$(PYTHON) worldyard.py
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"

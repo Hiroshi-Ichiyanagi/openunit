@@ -39,6 +39,7 @@ jobs:
           python test_independent.py
           python test_properties.py
           python test_fallbacks.py
+          python test_compat.py
 
       - name: Independent second-implementation verifier (no engine import)
         shell: bash
@@ -57,4 +58,6 @@ jobs:
 
       - name: Demo (sanity)
         shell: bash
-        run: python openunit.py
+        run: |
+          python worldyard.py
+          python openunit.py   # deprecated name, must keep working

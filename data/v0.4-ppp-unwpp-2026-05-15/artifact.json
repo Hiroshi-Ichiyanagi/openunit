@@ -1,5 +1,5 @@
 {
-  "method": "openunit",
+  "method": "worldyard",
   "method_version": "v0.4",
   "numeraire": "USD",
   "weight_vintage_label": "UN-WPP-2024 + WB-PPP-2024 (WDI 2026-10-08)",
@@ -56,6 +56,6 @@
       "realized_weight_at_valuation": "0.64338508249199360000486551498040982925217967708355"
     }
   ],
-  "input_digest": "sha256:81644b72a6e9149534b65ebc843188ce3d1b5e8918bdb9923caa301b88314652",
-  "artifact_hash": "sha256:db4cd6e15afa6346f76dfee49125ba00151d52d4e5bb917e78ddc9be98a5221d"
+  "input_digest": "sha256:52525ff9c13ae63ed7feae056ce6f22ed10b0731512779979bdbf72a9774ef3d",
+  "artifact_hash": "sha256:d0fa47764cc918bff0d567eb6528d7f8708f6c7e7ea143f6034004f8af69e175"
 }

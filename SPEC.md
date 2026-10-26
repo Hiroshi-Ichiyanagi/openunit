@@ -1,11 +1,17 @@
-# openunit — Specification
+# Worldyard (formerly openunit) — Specification
 
-openunit is a deterministic, publicly verifiable, **population-weighted unit of
+Worldyard is a deterministic, publicly verifiable, **population-weighted unit of
 account**. It does not issue money and it does not settle payments. It only
 *measures*: given a pinned set of inputs, anyone can recompute the exact same
 value and the exact same hashes, byte for byte.
 
 > Don't trust me. Verify me.
+
+**Name.** The project was called openunit up to version 0.3.0. Specs and
+artifacts carry the method name in their hashed `method` field: vintages built
+before the rename keep `"openunit"` (and therefore every hash they had); new
+vintages carry `"worldyard"` (§4.1). Where this document quotes a value as
+"1 openunit", it is the same unit as "1 worldyard".
 
 This document specifies the method, the determinism guarantees, the on-disk
 formats, and the verification procedure. The byte-level field layout lives in
@@ -20,7 +26,7 @@ currency. The reference value is reported in a numeraire (USD here) only as a
 readable denomination; the *unit itself* is defined by the basket, not by any
 single national currency.
 
-**Non-goals.** openunit is not a currency, token, stablecoin, or settlement
+**Non-goals.** Worldyard is not a currency, token, stablecoin, or settlement
 rail. It does not predict returns and gives no financial advice. A vintage
 asserts a real-world value only when it is built from real, named, pinned, and
 hashed inputs (see §6); the bundled `sample_input.json` is illustrative and
@@ -50,9 +56,9 @@ at the weight vintage) and `fx_v_i` the valuation-leg rate.
 weight_i        = population_i / Σ_j population_j               # pinned
 amount_i        = weight_i / fx_b_i                             # fixed quantity
 baseline_value  = Σ_i amount_i · fx_b_i        ( = 1 by construction )
-value(openunit) = Σ_i amount_i · fx_v_i                         # 1 openunit, in numeraire
+value(unit)     = Σ_i amount_i · fx_v_i                         # 1 unit, in numeraire
 realized_weight_at_pin_i        = amount_i · fx_b_i / baseline_value     ( = weight_i )
-realized_weight_at_valuation_i  = amount_i · fx_v_i / value(openunit)
+realized_weight_at_valuation_i  = amount_i · fx_v_i / value(unit)
 ```
 
 ### 2.2 Optional weighting multiplier
@@ -110,8 +116,10 @@ pinned realized weights equal to population shares at precision 60.
 
 ### 4.1 Spec (input)
 
-A spec is a JSON object with: `method` (`"openunit"`), `method_version`
-(`"v0"`, `"v0.1"`, `"v0.2"`, …), `numeraire`, a `weight_vintage` object
+A spec is a JSON object with: `method` (`"worldyard"`; `"openunit"` in every
+spec written before the rename, and the meaning of an absent `method`; any
+other name is rejected), `method_version`
+(`"v0"`, `"v0.1"`, `"v0.2"`, …, `"v0.4"`), `numeraire`, a `weight_vintage` object
 (`label`, `basis`, and free-form provenance), and a `basket` array. Each basket
 entry has `code`, optional `name`, `population` (decimal string),
 `fx_baseline_usd_per_unit`, `fx_valuation_usd_per_unit`, and optionally
@@ -123,12 +131,12 @@ decimal **strings**.
 
 | field | meaning |
 |---|---|
-| `method`, `method_version` | `"openunit"`, e.g. `"v0.1"` |
+| `method`, `method_version` | copied from the spec: `"openunit"` or `"worldyard"`, e.g. `"v0.1"` |
 | `numeraire` | denomination of `value_usd` (e.g. `"USD"`) |
 | `weight_vintage_label` | label of the pinned weight vintage |
 | `weight_basis` | e.g. `"population_share"` |
 | `baseline_value_usd` | value at the baseline leg (= 1 by construction) |
-| `value_usd` | value of 1 openunit at the valuation leg |
+| `value_usd` | value of 1 unit at the valuation leg |
 | `basket[]` | per entry: `code`, `name`, `population_share`, `fixed_amount`, `realized_weight_at_pin`, `realized_weight_at_valuation` (and, only if multipliers are present, `weight_multiplier`, `effective_weight`) |
 | `input_digest` | SHA-256 of the spec |
 | `artifact_hash` | SHA-256 of the artifact excluding this field |
@@ -143,6 +151,12 @@ byte-for-byte identical to openunit v0. The bundled illustrative v0 sample is
 pinned in `test_vintages.py` to `artifact_hash`
 `sha256:433d5e95…56bd` and must not regress.
 
+The rename keeps this: the artifact's `method` is copied from the spec, and a
+spec with `"openunit"` (or none) gives exactly the artifact it gave before, so
+every vintage built before the rename rebuilds byte for byte
+(`test_compat.py`). `import openunit` and the `openunit` command remain as
+deprecated aliases of `worldyard`.
+
 ## 5. Verification
 
 `verify_artifact(artifact, spec)` returns `True` iff **all** hold:
@@ -154,7 +168,7 @@ pinned in `test_vintages.py` to `artifact_hash`
 3. rebuilding from `spec` reproduces `artifact` exactly.
 
 Any single-field tamper breaks (2) and/or (3). From the command line:
-`openunit verify artifact.json spec.json` (exit 0 on success, 1 on failure).
+`worldyard verify artifact.json spec.json` (exit 0 on success, 1 on failure).
 
 ## Input domain
 
@@ -174,7 +188,7 @@ input domain at its previously-undefined edge.
 
 ## Data states and fallbacks
 
-openunit never guesses an input. Before a vintage is built, every input — an FX
+Worldyard never guesses an input. Before a vintage is built, every input — an FX
 rate on a date, a population for a year, a PPP factor for a reference year — is
 either **resolved** by one of the rules below or it is **unavailable**, and an
 unavailable input is never put into a spec. The rules are declared here in
@@ -183,7 +197,7 @@ give the same state, value and flags, on any machine, at any time.
 
 Resolution happens **before** the engine runs. `build_artifact` is unchanged and
 still takes only resolved numbers, so these rules change no shipped spec,
-artifact or hash. The reference implementation is `openunit.resolve_input`
+artifact or hash. The reference implementation is `worldyard.resolve_input`
 (pure: no I/O, no clock, independent of the order of the observations; tested by
 `test_fallbacks.py`).
 
@@ -247,7 +261,7 @@ never interpolated or averaged, and no undeclared source is substituted.
   closing-day sequence (`test_fallbacks.py` checks this for 2000–2199). The UN
   released WPP 2024 on 11 July 2024 and has postponed its next revision to
   11 July 2027; four years covers that postponement. The three values are
-  pre-declared in `openunit.DECLARED_MAX_AGE_DAYS`. A vintage may declare a
+  pre-declared in `worldyard.DECLARED_MAX_AGE_DAYS`. A vintage may declare a
   stricter maximum age (it is then hashed with the spec) but never a looser one
   without saying so in its `SOURCES.md`. The shipped vintages use ECB rates on
   their exact dates (age 0), WPP 2024 (547 days before their 2026-01-09
@@ -279,7 +293,7 @@ never interpolated or averaged, and no undeclared source is substituted.
   and not filled from the neighbouring periods. Example: after the 2025 lapse
   in US appropriations, BLS issued no October 2025 CPI release and did not
   publish October 2025 indexes for most CPI series; it chose not to collect the
-  data retroactively. (openunit uses no CPI today; the rule applies to any
+  data retroactively. (Worldyard uses no CPI today; the rule applies to any
   input.)
 - **Source endpoint retirement.** A vintage never depends on an endpoint: its
   raw numbers are reproduced in its `SOURCES.md` and hashed in its spec, so it
@@ -375,14 +389,15 @@ Regenerate or check them with `python3 make_vintages.py [--verify]`.
   (`data/sources/wb_pa_nus_ppp_2024_wdi-2026-10-08.json`, CC BY 4.0, sha256
   part of the spec), labelled as the World Bank labels them: the ICP 2021
   benchmark extrapolated to 2024 (China, India) and Eurostat-OECD annual PPPs
-  (Japan, United Kingdom, euro-area members). `1 openunit = 2.845044
-  international dollars` (v0.2: 2.848010). Reasons for the correction:
+  (Japan, United Kingdom, euro-area members). `1 worldyard = 2.845044
+  international dollars` (v0.2: 2.848010); the first vintage with the method
+  name `worldyard`. Reasons for the correction:
   Bulgaria's membership, the population source, v0.2's "ICP 2024" label, and
   the World Bank's July 2026 revisions of five of v0.2's values.
 
 ## 7. Anchoring
 
-The optional anchoring layer (`anchor.py`, `openunit anchor` / `verify-anchor`)
+The optional anchoring layer (`anchor.py`, `worldyard anchor` / `verify-anchor`)
 commits an `artifact_hash` to an offline, append-only hash-chain record, so a
 publisher can show an artifact existed by a point in time and has not been
 silently revised. The core is deterministic, keyless, and offline; an external
@@ -418,10 +433,10 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
   member when checked on 2026-06-10 (`docs/AUDIT.md`). Those 2024 values are
   not ICP benchmark values: the next ICP benchmark, ICP 2024, has not been
   released, and WDI will replace its extrapolations when it is.
-- ✅ A published-artifact **format standard** (`openunit-artifact-1`, see
-  `ARTIFACT_FORMAT.md` §9) and a **minimal third-party verifier**
-  (`verify_independent.py`, engine-free, stdlib-only).
-- ✅ **Public timestamping** for anchors: the shipped vintages carry
+- ✅ A published-artifact **format standard** (`openunit-artifact-1`, now
+  `worldyard-artifact-2`, see `ARTIFACT_FORMAT.md` §9) and a **minimal
+  third-party verifier** (`verify_independent.py`, engine-free, stdlib-only).
+- ✅ **Public timestamping** for anchors: the published vintages (v0.1, v0.2) carry
   OpenTimestamps proofs confirmed in the Bitcoin blockchain
   (`docs/ANCHORING.md`); the core stays offline.
 
@@ -430,12 +445,12 @@ outside the commitment. Full model: [`docs/ANCHORING.md`](docs/ANCHORING.md).
 Choosing to weight by population is a **value choice**, not a neutral
 measurement. One-person-one-vote favors populous economies; GDP or trade
 weighting favors large economies; PPP weighting favors welfare comparisons.
-openunit makes the population choice explicit and **contestable**: the method is
+Worldyard makes the population choice explicit and **contestable**: the method is
 fixed and auditable, so the *politics of the weighting* can be argued in the
 open, on the record, rather than hidden inside an opaque index.
 
 The v0.2 euro-area PPP factor is a concrete instance: because the World Bank
-publishes no single Euro-area `PA.NUS.PPP` value, openunit blends the 20 member
+publishes no single Euro-area `PA.NUS.PPP` value, Worldyard blends the 20 member
 states **weighted by population** rather than by GDP. That is the same value
 choice applied one level down — recorded in the vintage's `SOURCES.md` with the
 full member table and formula so a GDP-weighted (or any other) alternative can
@@ -447,7 +462,7 @@ computed, because Bulgaria's GDP was not downloaded.
 population-weighted euro-area `PA.NUS.PPP` `= 0.642950` (**shipped**) vs.
 GDP-weighted `= 0.661121` (World Bank `NY.GDP.MKTP.CD`, 2024). Under each, one
 openunit in the v0.2 vintage is `2.848010` vs. `2.844627` international dollars —
-a ~0.12% difference. openunit ships the **population-weighted** figure
+a ~0.12% difference. The vintage ships the **population-weighted** figure
 (consistent with the one-person-one-vote stance above); the GDP-weighted
 alternative changes no shipped spec, artifact, or hash and is reproduced in full
 (member GDP table + formula) in the vintage's `SOURCES.md`.

@@ -1,13 +1,20 @@
-# openunit
+# Worldyard (formerly openunit)
 
 A deterministic, publicly verifiable, **population-weighted unit of account**.
+
+> **Renamed.** This project was called **openunit** up to version 0.3.0. The
+> Python module, the command and the method name are now `worldyard`.
+> `import openunit` and the `openunit` command still work, with a deprecation
+> notice. Vintages built before the rename keep the method name `openunit`
+> and every hash they had. The GitHub repository still has the old name; it
+> will move to the new name later.
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-none%20(stdlib)-success.svg)
 
-openunit is a *measuring stick*, not money. It does not issue a currency, hold
+Worldyard is a *measuring stick*, not money. It does not issue a currency, hold
 reserves, or settle payments. It defines one thing precisely: a unit of value
 whose basket weights count **people**, not whichever country issues the reserve
 currency — and it does so reproducibly, so anyone can recompute the exact same
@@ -28,15 +35,15 @@ number and the exact same hashes, byte for byte.
 
 ## Scope, licence and terms
 
-- **Information only.** openunit publishes a reproducible measurement for
+- **Information only.** Worldyard publishes a reproducible measurement for
   information. It is not offered as a benchmark for financial instruments or
   contracts, nor as the backing or reference value of a token.
 - **The licence is not a use restriction, and not an assurance of
   suitability.** The Apache License 2.0 covers the code: it lets anyone use, modify and
-  redistribute it, and it does not itself restrict *what* anyone uses openunit
+  redistribute it, and it does not itself restrict *what* anyone uses Worldyard
   for. Equally, nothing in the licence or in this README says a given use is
   suitable or lawful. Whether a use is regulated (for example as a benchmark)
-  depends on how and by whom openunit is used, not on this statement; anyone
+  depends on how and by whom Worldyard is used, not on this statement; anyone
   who builds on it must check the rules that apply to them.
 - **Data terms are separate from the code licence.** Each input keeps its
   publisher's terms (each vintage's `SOURCES.md` names its publishers): the ECB's euro
@@ -45,18 +52,18 @@ number and the exact same hashes, byte for byte.
   <https://www.ecb.europa.eu/home/disclaimer/html/index.en.html>); UN World
   Population Prospects data are licensed CC BY 3.0 IGO; World Bank `PA.NUS.PPP`
   data CC BY 4.0.
-- **Independent.** openunit is not affiliated with, endorsed by, or certified
+- **Independent.** Worldyard is not affiliated with, endorsed by, or certified
   by IOSCO, the IMF, the ECB, the United Nations, the World Bank, or any other
   authority or standard-setter. Mentions of the SDR method or of these
   publishers describe the method and the inputs only. Any future description of
-  openunit's governance against published principles (such as IOSCO's
+  Worldyard's governance against published principles (such as IOSCO's
   Principles for Financial Benchmarks) would be a voluntary self-description,
   not a certification.
 
 ## Why
 
 Expressing value in a single national currency bakes in the politics of who
-issues it. openunit counts people equally instead: one person, one vote. That
+issues it. Worldyard counts people equally instead: one person, one vote. That
 is deliberately a **value choice, not a neutral fact** (see *On "fairness"*
 below and `SPEC.md` §10) — the point is to make the choice explicit, fixed, and
 auditable so it can be argued in the open rather than hidden inside an opaque
@@ -65,10 +72,10 @@ index.
 ## Quickstart
 
 ```sh
-git clone <repo-url> openunit && cd openunit
+git clone <repo-url> worldyard && cd worldyard
 python3 test_determinism_guard.py     # 4/4 determinism checks
 python3 make_vintages.py --verify     # real vintages reproduce, byte for byte
-python3 openunit.py                    # illustrative demo
+python3 worldyard.py                   # illustrative demo
 ```
 
 No third-party dependencies — Python **3.10+** (as declared in
@@ -81,6 +88,9 @@ input), an `artifact.json` (the built, self-verifying result), and a
 `SOURCES.md` (full provenance: URLs, dates, raw numbers, and the exact
 conversion used). `data/vintages.json` records which vintage supersedes which,
 with machine-readable warnings; published vintage files are never rewritten.
+Vintages built before the rename (v0.1 to v0.3) carry the method name
+`openunit` and quote their value as "1 openunit"; v0.4 carries `worldyard`.
+It is the same unit.
 
 ### `v0.1-2026-05-15` — **REAL DATA**
 
@@ -164,10 +174,10 @@ sha256). The nominal-FX baseline is the same ECB data as v0.2.
   (`data/vintages.json` warning `PPP_EXTRAPOLATED`).
 - the euro-area factor is again a population-weighted blend of the members
   (the World Bank publishes no euro-area value): 0.638144 (v0.2: 0.642950)
-- **1 openunit = 2.845044 international dollars** (v0.2: 2.848010; −0.104 %:
+- **1 worldyard = 2.845044 international dollars** (v0.2: 2.848010; −0.104 %:
   −0.044 % from the World Bank's July 2026 revisions, the rest from adding
   Bulgaria; the switch to the UN file is negligible)
-- `artifact_hash` `sha256:db4cd6e1…221d`
+- `artifact_hash` `sha256:d0fa4776…e175` (method name `worldyard`)
 - realized weight at PPP: India 64.34 %, China 25.35 %, euro area 4.43 %,
   United States 3.24 %, Japan 1.91 %, United Kingdom 0.73 % (population
   shares as in v0.3)
@@ -175,14 +185,15 @@ sha256). The nominal-FX baseline is the same ECB data as v0.2.
 ## Command-line interface
 
 ```sh
-openunit build  spec.json -o artifact.json     # build + self-verify
-openunit verify artifact.json spec.json         # exit 0 iff it reproduces
-openunit show   artifact.json                   # one-screen summary
-openunit anchor artifact.json -o anchor.json [--prev prev.json] [--label L]
-openunit verify-anchor anchor.json artifact.json [--prev prev.json]
+worldyard build  spec.json -o artifact.json    # build + self-verify
+worldyard verify artifact.json spec.json        # exit 0 iff it reproduces
+worldyard show   artifact.json                  # one-screen summary
+worldyard anchor artifact.json -o anchor.json [--prev prev.json] [--label L]
+worldyard verify-anchor anchor.json artifact.json [--prev prev.json]
 ```
 
-After a local install (`pip install -e .`) the `openunit` command is available;
+After a local install (`pip install -e .`) the `worldyard` command is available
+(the old `openunit` command still works and prints a deprecation notice);
 otherwise run the same subcommands with `python3 cli.py …`.
 
 ## Verifying someone else's published value
@@ -191,7 +202,7 @@ You need exactly two files: the `spec.json` that was hashed and the
 `artifact.json` that was published.
 
 ```sh
-openunit verify artifact.json spec.json
+worldyard verify artifact.json spec.json
 ```
 
 `verify` returns success only if **all three** hold: the artifact's
@@ -201,10 +212,10 @@ single-field edit to either file breaks verification. See `SPEC.md` §5.
 
 ## Independent verification (don't even trust the engine)
 
-`openunit verify` uses the engine to check the engine's own output. If you do
+`worldyard verify` uses the engine to check the engine's own output. If you do
 not want to extend even that much trust, `verify_independent.py` is a **second
 implementation** of the entire verification procedure, written from `SPEC.md`
-and `ARTIFACT_FORMAT.md` alone: it never imports `openunit`/`cli`/`anchor` and
+and `ARTIFACT_FORMAT.md` alone: it never imports `worldyard`/`openunit`/`cli`/`anchor` and
 shares no code with them. It re-derives every weight, amount, value, and both
 hashes from the spec, then compares the published artifact field by field
 (standard library only):
@@ -239,7 +250,7 @@ the program that would say so.
 
 ## Anchoring (tamper-evidence)
 
-openunit's value is reproducibility, not authority. The optional anchoring
+Worldyard's value is reproducibility, not authority. The optional anchoring
 helper commits an `artifact_hash` to a small, offline, append-only hash-chain
 record so a publisher can say "this exact artifact existed by this point and has
 not been silently revised." Producing a public, independently-checkable
@@ -250,7 +261,8 @@ be attached later without changing any hash. See `docs/ANCHORING.md`.
 ## Project layout
 
 ```
-openunit.py                 engine: build_artifact / verify_artifact / resolve_input (+ demo)
+worldyard.py                engine: build_artifact / verify_artifact / resolve_input (+ demo)
+openunit.py                 deprecated alias: `import openunit` returns the worldyard module
 cli.py                      command-line interface
 anchor.py                   tamper-evident anchoring (offline hash-chain)
 make_vintages.py            regenerate / --verify the pinned data vintages
@@ -272,6 +284,7 @@ test_anchor.py              anchoring commitment, chaining, tamper detection
 test_independent.py         engine × independent-verifier cross-validation
 test_properties.py          randomized property / edge / tamper tests (fixed seed)
 test_fallbacks.py           data states and fallbacks (stale, suspended, fixed conversion, ...)
+test_compat.py              the rename: openunit alias, method names, old vintages unchanged
 SPEC.md                     specification
 ARTIFACT_FORMAT.md          byte-level spec.json / artifact.json format
 docs/ANCHORING.md           anchoring model and external timestamping
@@ -281,7 +294,7 @@ docs/ANCHORING.md           anchoring model and external timestamping
 
 Weighting by population is a **value choice**, not a neutral measurement.
 One-person-one-vote favors populous economies; GDP or trade weighting favors
-large economies; PPP weighting favors welfare comparisons. openunit fixes the
+large economies; PPP weighting favors welfare comparisons. Worldyard fixes the
 population choice and makes it **contestable**: the method is fixed and
 auditable, so the *politics of the weighting* can be argued in public, on the
 record, rather than hidden inside an opaque index.

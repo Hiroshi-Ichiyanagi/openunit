@@ -2,7 +2,7 @@
 
 ## Scope
 
-openunit is a *measuring stick*: a deterministic library, CLI, and set of data
+Worldyard (formerly openunit) is a *measuring stick*: a deterministic library, CLI, and set of data
 vintages. It holds no funds, manages no keys, runs no service, and performs no
 network or filesystem I/O in its engine. There is no wallet, account, or
 custody surface to attack. Its security properties are therefore narrow and
@@ -29,7 +29,7 @@ specific:
 ## What is out of scope
 
 - The trustworthiness of the *external* inputs themselves (UN/ECB/World Bank
-  figures); openunit only guarantees faithful, exact computation over the inputs
+  figures); Worldyard only guarantees faithful, exact computation over the inputs
   recorded in each vintage's `SOURCES.md`.
 - Backdating prevention from the offline anchor core alone — that requires an
   external public timestamp (see `docs/ANCHORING.md`).

@@ -6,7 +6,7 @@ test_independent.py -- the independent second-implementation verifier
 and must reject any tampered artifact or mismatched spec.
 
 The point of these tests is CROSS-VALIDATION: artifacts produced by the engine
-(`openunit.build_artifact`) are checked by a verifier that never imports the
+(`worldyard.build_artifact`) are checked by a verifier that never imports the
 engine. Agreement here means two independent implementations of SPEC.md /
 ARTIFACT_FORMAT.md reproduce identical bytes and hashes.
 
@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 
-import openunit            # engine: used only to GENERATE artifacts to check
+import worldyard            # engine: used only to GENERATE artifacts to check
 import verify_independent  # the independent verifier under test
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -62,7 +62,8 @@ def test_verifier_never_imports_the_engine():
     src_path = os.path.join(HERE, "verify_independent.py")
     with open(src_path, "r", encoding="utf-8") as fh:
         src = fh.read()
-    for forbidden in ("import openunit", "from openunit",
+    for forbidden in ("import worldyard", "from worldyard",
+                      "import openunit", "from openunit",
                       "import cli", "from cli",
                       "import anchor", "from anchor"):
         assert forbidden not in src, \
@@ -82,7 +83,7 @@ def test_v0_sample_passes_independent_verification():
     """The engine-built v0 sample artifact must be reproduced by the
     independent implementation (no-multiplier branch)."""
     spec = _load(os.path.join(HERE, "sample_input.json"))
-    art = openunit.build_artifact(spec)
+    art = worldyard.build_artifact(spec)
     assert verify_independent.compare(spec, art) == []
     assert verify_independent.recompute_artifact(spec) == art
     assert _cli(spec, art) == 0
@@ -104,7 +105,7 @@ def test_multiplier_branch_passes_independent_verification():
              "weight_multiplier": "3"},
         ],
     }
-    art = openunit.build_artifact(spec)
+    art = worldyard.build_artifact(spec)
     assert any("effective_weight" in r for r in art["basket"])
     assert verify_independent.recompute_artifact(spec) == art
     assert verify_independent.compare(spec, art) == []

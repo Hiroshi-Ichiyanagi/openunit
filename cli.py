@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-openunit command-line interface.
+Worldyard (formerly openunit) command-line interface.
 
-    openunit build  <spec.json> [-o artifact.json]
-    openunit verify <artifact.json> <spec.json>
-    openunit show   <artifact.json>
-    openunit anchor <artifact.json> [-o anchor.json] [--prev prev.json] [--label L]
-    openunit verify-anchor <anchor.json> <artifact.json> [--prev prev.json]
+    worldyard build  <spec.json> [-o artifact.json]
+    worldyard verify <artifact.json> <spec.json>
+    worldyard show   <artifact.json>
+    worldyard anchor <artifact.json> [-o anchor.json] [--prev prev.json] [--label L]
+    worldyard verify-anchor <anchor.json> <artifact.json> [--prev prev.json]
 
 Exit code 0 on success, 1 on any verification failure or error. The CLI is a
-thin wrapper over the engine (openunit.py) and the anchoring helper (anchor.py);
-all determinism guarantees live there.
+thin wrapper over the engine (worldyard.py) and the anchoring helper
+(anchor.py); all determinism guarantees live there. The old command name
+`openunit` still works (main_openunit) and prints a deprecation notice on
+stderr.
 """
 
 import sys
@@ -19,7 +21,7 @@ import json
 import argparse
 from decimal import Decimal
 
-import openunit
+import worldyard
 import anchor as anchor_mod
 
 
@@ -39,15 +41,15 @@ def _dump(obj, path=None):
 
 def cmd_build(args):
     spec = _load(args.spec)
-    art = openunit.build_artifact(spec)
-    if not openunit.verify_artifact(art, spec):
+    art = worldyard.build_artifact(spec)
+    if not worldyard.verify_artifact(art, spec):
         print("ERROR: built artifact failed self-verification", file=sys.stderr)
         return 1
     _dump(art, args.output)
     if args.output:
         v = Decimal(art["value_usd"]).quantize(Decimal("0.000001"))
-        print("built %s  ->  1 openunit = %s %s"
-              % (args.output, v, art["numeraire"]))
+        print("built %s  ->  1 %s = %s %s"
+              % (args.output, art["method"], v, art["numeraire"]))
         print("artifact_hash: %s" % art["artifact_hash"])
     return 0
 
@@ -55,7 +57,7 @@ def cmd_build(args):
 def cmd_verify(args):
     art = _load(args.artifact)
     spec = _load(args.spec)
-    ok = openunit.verify_artifact(art, spec, explain=True)
+    ok = worldyard.verify_artifact(art, spec, explain=True)
     print("VERIFIED" if ok else "FAILED")
     return 0 if ok else 1
 
@@ -64,7 +66,7 @@ def cmd_show(args):
     art = _load(args.artifact)
     v = Decimal(art["value_usd"]).quantize(Decimal("0.000001"))
     print("method        : %s %s" % (art["method"], art["method_version"]))
-    print("1 openunit    : %s %s" % (v, art["numeraire"]))
+    print("1 unit        : %s %s" % (v, art["numeraire"]))
     print("weight basis  : %s" % art["weight_basis"])
     print("vintage       : %s" % art["weight_vintage_label"])
     print("input_digest  : %s" % art["input_digest"])
@@ -94,7 +96,8 @@ def cmd_verify_anchor(args):
 
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="openunit", description="openunit CLI")
+    p = argparse.ArgumentParser(prog="worldyard",
+                                description="Worldyard (formerly openunit) CLI")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     b = sub.add_parser("build", help="build an artifact from a spec")
@@ -130,6 +133,13 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     return args.func(args)
+
+
+def main_openunit(argv=None):
+    """The deprecated `openunit` command: same subcommands, same results."""
+    print("note: the 'openunit' command is deprecated; the project is now "
+          "Worldyard -- use 'worldyard' (same subcommands)", file=sys.stderr)
+    return main(argv)
 
 
 if __name__ == "__main__":

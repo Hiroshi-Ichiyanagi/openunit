@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-make_vintages.py -- regenerate the pinned data vintages under data/.
+make_vintages.py -- regenerate the pinned Worldyard (formerly openunit) data
+vintages under data/.
+
+Vintages built before the rename (v0.1, v0.2, v0.3-unwpp) keep the method name
+"openunit" and their generated text unchanged, byte for byte; only new
+vintages (from v0.4-ppp-unwpp) use "worldyard".
 
 It embeds the *raw* source numbers (exactly as published) and derives the
 engine inputs with the same exact arithmetic the engine uses, then writes,
@@ -55,7 +60,7 @@ import hashlib
 import argparse
 from decimal import Decimal, localcontext, ROUND_HALF_EVEN
 
-import openunit  # the engine (same directory / installed package)
+import worldyard  # the engine (same directory / installed package)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
@@ -245,7 +250,7 @@ def v0_2_value_for_euro_ppp(euro_ppp):
         "rounding": {"precision": PREC, "mode": "ROUND_HALF_EVEN", "display_dp": 6},
         "basket": basket,
     }
-    return Decimal(openunit.build_artifact(spec)["value_usd"])
+    return Decimal(worldyard.build_artifact(spec)["value_usd"])
 
 
 # Fill EUR from the population-weighted member blend (full precision; the member
@@ -274,7 +279,7 @@ def write(path, text):
 
 
 def dump_json(obj):
-    # Human-readable on disk; the *hash* always uses openunit.canonical().
+    # Human-readable on disk; the *hash* always uses worldyard.canonical().
     return json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
 
 
@@ -338,8 +343,8 @@ def build_v0_1(persist=True):
         },
         "basket": basket,
     }
-    art = openunit.build_artifact(spec)
-    assert openunit.verify_artifact(art, spec), "v0.1 failed self-verification"
+    art = worldyard.build_artifact(spec)
+    assert worldyard.verify_artifact(art, spec), "v0.1 failed self-verification"
 
     vid = "v0.1-%s" % ECB["valuation"]["date"]
     sources = sources_v0_1(spec, art, ea_pop)
@@ -486,8 +491,8 @@ def build_v0_2(persist=True):
         },
         "basket": basket,
     }
-    art = openunit.build_artifact(spec)
-    assert openunit.verify_artifact(art, spec), "v0.2 failed self-verification"
+    art = worldyard.build_artifact(spec)
+    assert worldyard.verify_artifact(art, spec), "v0.2 failed self-verification"
 
     vid = "v0.2-ppp-%s" % ECB["valuation"]["date"]
     sources = sources_v0_2(spec, art)
@@ -836,7 +841,7 @@ def nominal_fx_artifact(pop_for, method_version="v0.3"):
         "weight_vintage": {"label": "comparison", "basis": "population_share"},
         "basket": basket,
     }
-    return openunit.build_artifact(spec)
+    return worldyard.build_artifact(spec)
 
 
 def build_v0_3_unwpp(persist=True):
@@ -971,8 +976,8 @@ def build_v0_3_unwpp(persist=True):
         }],
         "basket": basket,
     }
-    art = openunit.build_artifact(spec)
-    assert openunit.verify_artifact(art, spec), "v0.3 failed self-verification"
+    art = worldyard.build_artifact(spec)
+    assert worldyard.verify_artifact(art, spec), "v0.3 failed self-verification"
 
     sources = sources_v0_3(spec, art, un, members, ea, v01_art, mismatches,
                            added)
@@ -1316,7 +1321,8 @@ def ppp_blend(member_pops, member_ppps):
         return num / den
 
 
-def ppp_artifact(pop_for, ppp_for, method_version="v0.4"):
+def ppp_artifact(pop_for, ppp_for, method_version="v0.4",
+                 method=worldyard.METHOD):
     """Artifact for v0.2's method (nominal FX on the valuation date as the
     baseline leg, 1/PPP as the valuation leg) with the given populations and
     PPP factors. Used for the v0.4 build and its comparison tables."""
@@ -1332,12 +1338,12 @@ def ppp_artifact(pop_for, ppp_for, method_version="v0.4"):
             "fx_valuation_usd_per_unit": str(ppp_rate),
         })
     spec = {
-        "method": "openunit", "method_version": method_version,
+        "method": method, "method_version": method_version,
         "numeraire": "USD",
         "weight_vintage": {"label": "comparison", "basis": "population_share"},
         "basket": basket,
     }
-    return openunit.build_artifact(spec)
+    return worldyard.build_artifact(spec)
 
 
 def v0_2_ppp_by_iso3():
@@ -1363,7 +1369,7 @@ def v0_4_input_states(pop_for, ppp_for):
     summary recorded in the spec. Refuses to build if any input is
     unavailable or if inputs of one kind resolve differently."""
     target = ECB["valuation"]["date"]
-    ages = openunit.DECLARED_MAX_AGE_DAYS
+    ages = worldyard.DECLARED_MAX_AGE_DAYS
     kinds = {
         "ecb_fx": ("ECB euro reference rates", target,
                    [ECB["valuation"]["per_eur"][c]
@@ -1378,7 +1384,7 @@ def v0_4_input_states(pop_for, ppp_for):
     for key, (source, obs_date, values) in kinds.items():
         results = []
         for v in values:
-            r = openunit.resolve_input(
+            r = worldyard.resolve_input(
                 target, {"observations": [{"date": obs_date, "value": v}]},
                 ages[source])
             if r["state"] == "unavailable":
@@ -1485,7 +1491,7 @@ def build_v0_4_ppp(persist=True):
         })
 
     spec = {
-        "method": "openunit",
+        "method": worldyard.METHOD,
         "method_version": "v0.4",
         "numeraire": "USD",
         "weight_vintage": {
@@ -1569,8 +1575,8 @@ def build_v0_4_ppp(persist=True):
         }],
         "basket": basket,
     }
-    art = openunit.build_artifact(spec)
-    assert openunit.verify_artifact(art, spec), "v0.4 failed self-verification"
+    art = worldyard.build_artifact(spec)
+    assert worldyard.verify_artifact(art, spec), "v0.4 failed self-verification"
     assert art["value_usd"] == ppp_artifact(pop_for, ppp_for)["value_usd"]
 
     sources = sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for,
@@ -1590,7 +1596,10 @@ def sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for, v02_art,
     sup = spec["supersedes"][0]
     ppp_p = spec["provenance"]["ppp"]
     lines = []
-    lines.append("# openunit vintage `%s` -- sources & provenance\n" % V0_4_ID)
+    lines.append("# Worldyard vintage `%s` -- sources & provenance\n" % V0_4_ID)
+    lines.append("*Worldyard was formerly called openunit; vintages built before "
+                 "the rename carry the method name `openunit`, this one "
+                 "`worldyard`. The unit and its formulas are the same.*\n")
     lines.append("**Status: REAL DATA.** v0.2's PPP-aware method (population "
                  "weights; nominal ECB FX on the baseline leg; PPP on the "
                  "valuation leg, so the unit is read in international dollars) "
@@ -1601,7 +1610,7 @@ def sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for, v02_art,
                  "`spec.json` and `artifact.json` byte for byte.\n" % V0_3_ID)
     lines.append("- `input_digest`  : `%s`" % art["input_digest"])
     lines.append("- `artifact_hash` : `%s`" % art["artifact_hash"])
-    lines.append("- **1 openunit = %s international $**\n"
+    lines.append("- **1 worldyard = %s international $**\n"
                  % Decimal(art["value_usd"]).quantize(q6))
 
     lines.append("## Supersedes `%s`\n" % sup["vintage"])
@@ -1751,7 +1760,7 @@ def sources_v0_4_ppp(spec, art, un, members, ea, wb, ppp_for, v02_art,
          Decimal(art["value_usd"])),
     ]
     lines.append("Applied one at a time, in this order:\n")
-    lines.append("| step | euro-area members | 1 openunit (int. $) | change vs v0.2 |")
+    lines.append("| step | euro-area members | 1 unit (int. $) | change vs v0.2 |")
     lines.append("|---|---|---|---|")
     with localcontext() as ctx:
         ctx.prec = PREC
@@ -1795,7 +1804,8 @@ def v02_ppp_eur():
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="make_vintages.py",
-        description="Regenerate or verify the pinned openunit data vintages.")
+        description="Regenerate or verify the pinned Worldyard (formerly "
+                    "openunit) data vintages.")
     ap.add_argument(
         "--verify", action="store_true",
         help="recompute every vintage in memory and compare it to the files "
@@ -1836,7 +1846,7 @@ def main(argv=None):
                 continue
             if on_disk != regen:
                 problems.append("%s differs from regenerated output" % name)
-        if not openunit.verify_artifact(art, spec):
+        if not worldyard.verify_artifact(art, spec):
             problems.append("verify_artifact returned False")
         if problems:
             failed += 1

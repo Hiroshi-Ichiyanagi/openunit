@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-test_properties.py -- randomized property, edge, and tamper tests for openunit.
+test_properties.py -- randomized property, edge, and tamper tests for the
+Worldyard (formerly openunit) engine.
 
 These tests use `random` with a FIXED seed, in the TEST PROCESS ONLY. The engine
-(`openunit.py`) imports no `random`/`time`/`datetime` and is never modified; the
+(`worldyard.py`) imports no `random`/`time`/`datetime` and is never modified; the
 determinism guard that enforces that scans the engine source alone, so these
 randomized tests cannot weaken it (see `test_guard_is_scoped_to_engine`).
 
@@ -27,7 +28,7 @@ import json
 import random
 from decimal import Decimal, localcontext, ROUND_HALF_EVEN
 
-import openunit
+import worldyard
 import verify_independent
 
 SEED = 20260613
@@ -75,11 +76,11 @@ def test_build_is_byte_identical_and_self_verifies():
     rng = _rng()
     for _ in range(N_BASKETS):
         spec = _rand_spec(rng)
-        a1 = openunit.build_artifact(spec)
-        a2 = openunit.build_artifact(copy.deepcopy(spec))
+        a1 = worldyard.build_artifact(spec)
+        a2 = worldyard.build_artifact(copy.deepcopy(spec))
         assert json.dumps(a1, sort_keys=True) == json.dumps(a2, sort_keys=True)
         assert a1["artifact_hash"] == a2["artifact_hash"]
-        assert openunit.verify_artifact(a1, spec) is True
+        assert worldyard.verify_artifact(a1, spec) is True
 
 
 def test_weight_and_baseline_invariants_within_tolerance():
@@ -88,7 +89,7 @@ def test_weight_and_baseline_invariants_within_tolerance():
     rng = _rng()
     for _ in range(N_BASKETS):
         spec = _rand_spec(rng)
-        art = openunit.build_artifact(spec)
+        art = worldyard.build_artifact(spec)
         with localcontext() as ctx:
             ctx.prec = 60
             ctx.rounding = ROUND_HALF_EVEN
@@ -114,7 +115,7 @@ def test_value_matches_independent_recompute():
     rng = _rng()
     for _ in range(N_BASKETS):
         spec = _rand_spec(rng)
-        art = openunit.build_artifact(spec)
+        art = worldyard.build_artifact(spec)
         assert verify_independent.recompute_artifact(spec) == art
         assert verify_independent.compare(spec, art) == []
 
@@ -128,7 +129,7 @@ def test_single_character_mutation_breaks_verification():
     while checked < N_TAMPER and attempts < N_TAMPER * 200:
         attempts += 1
         spec = _rand_spec(rng)
-        art = openunit.build_artifact(spec)
+        art = worldyard.build_artifact(spec)
         text = json.dumps(art, ensure_ascii=False)
         pos = rng.randrange(len(text))
         orig = text[pos]
@@ -145,7 +146,7 @@ def test_single_character_mutation_breaks_verification():
         if not isinstance(bad, dict) or bad == art:
             continue
         checked += 1
-        assert openunit.verify_artifact(bad, spec) is False, \
+        assert worldyard.verify_artifact(bad, spec) is False, \
             "engine accepted a 1-char mutation: pos=%d %r->%r" % (pos, orig, repl)
         assert verify_independent.compare(spec, bad) != [], \
             "independent verifier accepted a 1-char mutation"
@@ -158,7 +159,7 @@ def test_canonical_key_order_invariance_and_basket_order_sensitivity():
     rng = _rng()
     for _ in range(50):
         spec = _rand_spec(rng)
-        base = openunit.sha256(spec)
+        base = worldyard.sha256(spec)
 
         def reorder_keys(obj):
             if isinstance(obj, dict):
@@ -167,13 +168,13 @@ def test_canonical_key_order_invariance_and_basket_order_sensitivity():
                 return [reorder_keys(x) for x in obj]
             return obj
 
-        assert openunit.sha256(reorder_keys(spec)) == base, \
+        assert worldyard.sha256(reorder_keys(spec)) == base, \
             "digest changed under key reordering -- not canonical"
 
         if len(spec["basket"]) >= 2:
             shuffled = copy.deepcopy(spec)
             shuffled["basket"].reverse()
-            assert openunit.sha256(shuffled) != base, \
+            assert worldyard.sha256(shuffled) != base, \
                 "digest unchanged under basket reordering -- order must matter"
 
 
@@ -200,7 +201,7 @@ def test_non_positive_total_population_and_fx_are_rejected():
     ]
     for basket in rejecting:
         try:
-            openunit.build_artifact(_edge_spec(basket))
+            worldyard.build_artifact(_edge_spec(basket))
         except ValueError:
             continue
         raise AssertionError("expected ValueError for basket %r" % basket)
@@ -218,7 +219,7 @@ def test_negative_population_is_rejected():
     ]
     for basket in cases:
         try:
-            openunit.build_artifact(_edge_spec(basket))
+            worldyard.build_artifact(_edge_spec(basket))
         except ValueError:
             continue
         raise AssertionError("negative population accepted for %r" % basket)
@@ -235,13 +236,13 @@ def test_negative_population_is_rejected():
 def test_guard_is_scoped_to_engine_not_tests():
     """The determinism guard's wall-clock scan targets the ENGINE source only,
     so this test file importing `random` cannot trip it. Verify the guard still
-    passes and that its scan reads `openunit` (not this module)."""
+    passes and that its scan reads `worldyard` (not this module)."""
     import inspect
     import test_determinism_guard as guard
 
     # the engine genuinely does not import random, which is why the guard's scan
     # of the engine source stays clean:
-    assert "import random" not in inspect.getsource(openunit)
+    assert "import random" not in inspect.getsource(worldyard)
 
     # this very test module DOES import random -- proving the guard is not
     # scanning test files (or it would be flagging a legitimate dependency):

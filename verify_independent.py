@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-verify_independent.py -- an INDEPENDENT second implementation of the openunit
-verification procedure.
+verify_independent.py -- an INDEPENDENT second implementation of the Worldyard
+(formerly openunit) verification procedure.
 
 This verifier is written from the published documents alone -- `SPEC.md`
 (method, formulas, verification rules) and `ARTIFACT_FORMAT.md` (byte-level
-canonical encoding, hashing, field layout). It deliberately does NOT import
-`openunit`, `cli`, or `anchor`, and shares no code with them: if the engine
+canonical encoding, hashing, field layout; format `worldyard-artifact-2`,
+which accepts every `openunit-artifact-1` artifact unchanged). It deliberately
+does NOT import `worldyard`, `openunit`, `cli`, or `anchor`, and shares no code
+with them: if the engine
 were wrong, subtly non-deterministic, or tampered with, this program would
 disagree with its output. Standard library only (json, hashlib, decimal, sys,
 argparse).
@@ -40,6 +42,10 @@ from decimal import Decimal, localcontext, ROUND_HALF_EVEN
 # ROUND_HALF_EVEN, inside a context that does not leak to the caller.
 DEC_PRECISION = 50
 
+# ARTIFACT_FORMAT.md sections 4 and 6: the two accepted method names (the name
+# before the rename first: it is also what an absent `method` means).
+ACCEPTED_METHODS = ("openunit", "worldyard")
+
 
 # --- canonical bytes & hashing (ARTIFACT_FORMAT.md sections 2-3) -------------
 def canonical_bytes(value):
@@ -71,6 +77,10 @@ def recompute_artifact(spec):
     The two multiplier fields are emitted only when at least one basket entry
     carries `weight_multiplier` (the backward-compatibility rule).
     """
+    method = spec.get("method", ACCEPTED_METHODS[0])
+    if method not in ACCEPTED_METHODS:
+        raise ValueError("spec method must be one of %r, got %r"
+                         % (ACCEPTED_METHODS, method))
     entries = spec["basket"]
     multipliers_present = any("weight_multiplier" in e for e in entries)
 
@@ -126,7 +136,7 @@ def recompute_artifact(spec):
             rows.append(row)
 
         body = {
-            "method": "openunit",
+            "method": method,
             "method_version": spec.get("method_version", "v0"),
             "numeraire": spec.get("numeraire", "USD"),
             "weight_vintage_label": spec["weight_vintage"]["label"],
@@ -197,9 +207,10 @@ def compare(spec, artifact):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="verify_independent.py",
-        description="Independently re-verify an openunit artifact against its "
-                    "spec, from the published format documents alone (no "
-                    "engine import). Exit 0 iff every field matches.")
+        description="Independently re-verify a Worldyard (or openunit) "
+                    "artifact against its spec, from the published format "
+                    "documents alone (no engine import). Exit 0 iff every "
+                    "field matches.")
     parser.add_argument("spec", help="path to spec.json (the hashed input)")
     parser.add_argument("artifact", help="path to artifact.json (the published "
                                          "result)")

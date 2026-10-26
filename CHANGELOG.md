@@ -1,11 +1,43 @@
 # Changelog
 
-All notable changes to openunit are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). openunit is a
-specification plus a reference implementation; "versions" here refer to **method
+All notable changes to Worldyard (formerly openunit) are documented here. The
+format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Worldyard is a specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
-## [Unreleased] — draft on branch `feat/v0.4-sources-fallbacks` (not published)
+## [0.4.0] — unreleased (draft on branch `feat/v0.4-sources-fallbacks`, not published)
+
+### Renamed: openunit is now Worldyard
+
+- **Project, distribution, module and command renamed to `worldyard`**
+  (`pyproject.toml` name `worldyard`, version `0.4.0.dev0`; engine module
+  `worldyard.py`; console script `worldyard`). Entries for 0.3.0 and earlier
+  below keep the old names.
+- **Nothing that was published changes.** The method name is part of every
+  hash (`method` in the spec and in the artifact), so vintages built before
+  the rename (v0.1, v0.2, v0.3-unwpp) keep `"openunit"` and every byte and
+  hash; only new vintages (from `v0.4-ppp-unwpp`) carry `"worldyard"`. The
+  engine and the independent verifier copy `method` from the spec, accept
+  `"openunit"` (also the meaning of an absent `method`) and `"worldyard"`, and
+  reject anything else.
+- **Format standard `worldyard-artifact-2`** (`ARTIFACT_FORMAT.md`): the only
+  change from `openunit-artifact-1` is the `method` field. Every `-1` artifact
+  is a `-2` artifact with the same bytes; the published `-1` verifier still
+  passes v0.1 to v0.3 but reports `method` and `artifact_hash` as differing on
+  a `"worldyard"` vintage.
+- Kept as wire identifiers: the anchor record version `openunit-anchor-1`
+  (part of every anchor commitment) and the registry format
+  `openunit-vintage-registry-1`.
+- The GitHub repository and the URLs in `pyproject.toml` keep the old name
+  until the public rename is approved.
+
+### Deprecated
+
+- `import openunit`: still works, emits a `DeprecationWarning`, and returns the
+  `worldyard` module itself (same functions and constants). `python3
+  openunit.py` still runs the demo.
+- The `openunit` command (`cli:main_openunit`): same subcommands, plus a
+  notice on stderr.
 
 ### Added
 
@@ -20,9 +52,9 @@ versions** (the `method_version` field) and to releases of this repository.
 - `data/sources/un_wpp2024_population_2026.csv`: the 26 UN rows used (verbatim
   plus a derived persons column), pinned by sha256; `make_vintages.py
   --check-un-wpp RAW` re-derives it from the raw UN file byte for byte.
-- **New vintage `v0.4-ppp-unwpp-2026-05-15`** (method version `v0.4`,
-  `artifact_hash` `sha256:db4cd6e1…221d`, `1 openunit = 2.845044 international
-  dollars`; v0.2: 2.848010, −0.104 %): v0.2's PPP-aware method with
+- **New vintage `v0.4-ppp-unwpp-2026-05-15`** (method `worldyard`, method
+  version `v0.4`, `artifact_hash` `sha256:d0fa4776…e175`, `1 worldyard =
+  2.845044 international dollars`; v0.2: 2.848010, −0.104 %): v0.2's PPP-aware method with
   v0.3-unwpp's UN populations and 21-member euro area (headcount and PPP
   blend; euro-area factor 0.638144, v0.2: 0.642950), v0.2's ECB nominal FX,
   and World Bank `PA.NUS.PPP` 2024 from one API response committed verbatim
@@ -43,7 +75,8 @@ versions** (the `method_version` field) and to releases of this repository.
   populations = UN extract; v0.3 FX = v0.1 FX; registry consistency; v0.4
   populations = v0.3's, PPP factors = the pinned response's exact tokens,
   euro-area blend recomputed, labels follow the World Bank's footnotes,
-  input states re-resolved.
+  input states re-resolved; `test_compat.py` for the rename (alias module and
+  command, method names in both implementations, old vintages unchanged).
 - **`SPEC.md` "Data states and fallbacks"**: pre-declared, deterministic rules
   for stale inputs (maximum age per source: ECB 4 days, UN WPP 1461 days, World
   Bank PPP 1096 days), suspended rates (ECB RUB), extinct currencies with a
@@ -51,9 +84,9 @@ versions** (the `method_version` field) and to releases of this repository.
   parallel rates (declared `rate_type` + `MULTIPLE_RATES` flag), permanent data
   holes (BLS October 2025 CPI), source endpoint retirement (Fed H.10 Data
   Download Program), and an explicit `unavailable` state with a reason code.
-- **`openunit.resolve_input`**: the pure, deterministic implementation (no
+- **`worldyard.resolve_input`**: the pure, deterministic implementation (no
   clock, no I/O, order-independent; not called by `build_artifact`, so no
-  artifact or hash changes) and `openunit.DECLARED_MAX_AGE_DAYS`.
+  artifact or hash changes) and `worldyard.DECLARED_MAX_AGE_DAYS`.
   `test_fallbacks.py` (written first, 26/26 failing before the
   implementation) covers every state, the precedence order, validation, and
   proves the ECB maximum age is the tightest value covering every TARGET
@@ -66,6 +99,9 @@ versions** (the `method_version` field) and to releases of this repository.
 
 - `make verify-independent` and CI iterate over `data/*/spec.json`, so the
   non-vintage `data/sources/` directory is skipped.
+- The demo and `worldyard build` print the artifact's own method name
+  ("1 openunit = …" for vintages built before the rename); `show` prints
+  "1 unit".
 
 ### Found (no published file changed)
 

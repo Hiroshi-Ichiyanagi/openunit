@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-openunit anchoring -- commit an artifact_hash to a tamper-evident record.
+Worldyard (formerly openunit) anchoring -- commit an artifact_hash to a
+tamper-evident record.
 
 Scope (deliberately small and offline):
   - The *core* anchoring is a deterministic commitment over an artifact_hash,
@@ -14,7 +15,7 @@ Scope (deliberately small and offline):
     and is intentionally NOT part of the commitment, so attaching it later
     does not change any hash.
 
-Why anchor at all? openunit's value is reproducibility, not authority. Anchoring
+Why anchor at all? Worldyard's value is reproducibility, not authority. Anchoring
 lets a publisher say "this exact artifact existed by this point and has not been
 silently revised", which is what a measuring stick needs -- nothing more.
 
@@ -23,8 +24,10 @@ Determinism: stdlib only; no wall clock; SHA-256 over canonical JSON.
 
 import hashlib
 
-from openunit import canonical  # reuse the engine's canonical encoder
+from worldyard import canonical  # reuse the engine's canonical encoder
 
+# A wire identifier, kept across the rename: it is part of every anchor's
+# commitment, so existing anchor records keep verifying unchanged.
 ANCHOR_VERSION = "openunit-anchor-1"
 
 

@@ -8,7 +8,7 @@ pytest. No I/O, no clock.
 """
 
 from decimal import Decimal
-import openunit
+import worldyard
 
 
 def _base_entry(code, pop, fxb, fxv, mult=None):
@@ -31,11 +31,11 @@ def test_no_multiplier_is_v0_format():
     """A spec with no weight_multiplier must not emit weighting fields."""
     spec = _spec([_base_entry("USD", "100", "1.0", "1.0"),
                   _base_entry("INR", "200", "0.0104", "0.0104")])
-    art = openunit.build_artifact(spec)
+    art = worldyard.build_artifact(spec)
     for row in art["basket"]:
         assert "weight_multiplier" not in row
         assert "effective_weight" not in row
-    assert openunit.verify_artifact(art, spec)
+    assert worldyard.verify_artifact(art, spec)
 
 
 def test_multiplier_changes_effective_weight():
@@ -43,7 +43,7 @@ def test_multiplier_changes_effective_weight():
     while population_share stays the pure headcount share."""
     spec = _spec([_base_entry("USD", "100", "1.0", "1.0", mult="1"),
                   _base_entry("INR", "100", "0.0104", "0.0104", mult="3")])
-    art = openunit.build_artifact(spec)
+    art = worldyard.build_artifact(spec)
     rows = {r["code"]: r for r in art["basket"]}
     # equal population -> equal population_share
     assert rows["USD"]["population_share"] == rows["INR"]["population_share"]
@@ -53,7 +53,7 @@ def test_multiplier_changes_effective_weight():
     # pinned realized weight equals the effective weight by construction
     assert (Decimal(rows["INR"]["realized_weight_at_pin"])
             == Decimal(rows["INR"]["effective_weight"]))
-    assert openunit.verify_artifact(art, spec)
+    assert worldyard.verify_artifact(art, spec)
 
 
 def test_ppp_valuation_shifts_weight_to_low_price():
@@ -67,12 +67,12 @@ def test_ppp_valuation_shifts_weight_to_low_price():
         _base_entry("USD", "100", "1.0", "1.0"),
         _base_entry("INR", "100", "0.0104", str(Decimal(1) / Decimal("23.5"))),
     ])
-    art = openunit.build_artifact(spec)
+    art = worldyard.build_artifact(spec)
     rows = {r["code"]: r for r in art["basket"]}
     inr_pin = Decimal(rows["INR"]["realized_weight_at_pin"])
     inr_val = Decimal(rows["INR"]["realized_weight_at_valuation"])
     assert inr_val > inr_pin, "low-price economy should gain real weight at PPP"
-    assert openunit.verify_artifact(art, spec)
+    assert worldyard.verify_artifact(art, spec)
 
 
 def test_multiplier_one_matches_plain_shares():
@@ -81,7 +81,7 @@ def test_multiplier_one_matches_plain_shares():
                    _base_entry("EUR", "350", "1.16", "1.16")])
     withone = _spec([_base_entry("USD", "150", "1.0", "1.0", mult="1"),
                      _base_entry("EUR", "350", "1.16", "1.16", mult="1")])
-    a, b = openunit.build_artifact(plain), openunit.build_artifact(withone)
+    a, b = worldyard.build_artifact(plain), worldyard.build_artifact(withone)
     pa = {r["code"]: r["population_share"] for r in a["basket"]}
     pb = {r["code"]: r["effective_weight"] for r in b["basket"]}
     assert pa == pb  # effective weight (mult=1) == population share

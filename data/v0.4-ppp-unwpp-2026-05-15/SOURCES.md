@@ -1,10 +1,12 @@
-# openunit vintage `v0.4-ppp-unwpp-2026-05-15` -- sources & provenance
+# Worldyard vintage `v0.4-ppp-unwpp-2026-05-15` -- sources & provenance
+
+*Worldyard was formerly called openunit; vintages built before the rename carry the method name `openunit`, this one `worldyard`. The unit and its formulas are the same.*
 
 **Status: REAL DATA.** v0.2's PPP-aware method (population weights; nominal ECB FX on the baseline leg; PPP on the valuation leg, so the unit is read in international dollars) with the populations of `v0.3-unwpp-2026-05-15` (the UN Population Division's own WPP 2024 file, 21 euro-area members) and World Bank `PA.NUS.PPP` for reference year 2024, read from a pinned API response. Re-running `make_vintages.py` reproduces `spec.json` and `artifact.json` byte for byte.
 
-- `input_digest`  : `sha256:81644b72a6e9149534b65ebc843188ce3d1b5e8918bdb9923caa301b88314652`
-- `artifact_hash` : `sha256:db4cd6e15afa6346f76dfee49125ba00151d52d4e5bb917e78ddc9be98a5221d`
-- **1 openunit = 2.845044 international $**
+- `input_digest`  : `sha256:52525ff9c13ae63ed7feae056ce6f22ed10b0731512779979bdbf72a9774ef3d`
+- `artifact_hash` : `sha256:d0fa47764cc918bff0d567eb6528d7f8708f6c7e7ea143f6034004f8af69e175`
+- **1 worldyard = 2.845044 international $**
 
 ## Supersedes `v0.2-ppp-2026-05-15`
 
@@ -115,7 +117,7 @@ The WPP 2024 release date is from UN DESA (<https://www.un.org/development/desa/
 
 Applied one at a time, in this order:
 
-| step | euro-area members | 1 openunit (int. $) | change vs v0.2 |
+| step | euro-area members | 1 unit (int. $) | change vs v0.2 |
 |---|---|---|---|
 | v0.2 as published (Worldometer populations, WDI April 2026) | 20 | 2.848010114 | 0% |
 | UN file populations, same 20 members, same PPP (not shipped) | 20 | 2.848010113 | -2.381e-8% |

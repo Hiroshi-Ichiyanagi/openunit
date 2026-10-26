@@ -1,6 +1,6 @@
-# Contributing to openunit
+# Contributing to Worldyard (formerly openunit)
 
-Thanks for your interest. openunit is small on purpose, and its whole value is
+Thanks for your interest. Worldyard is small on purpose, and its whole value is
 that **anyone can recompute the same numbers and the same hashes, byte for
 byte.** Contributions are welcome as long as they preserve that property.
 
