@@ -191,6 +191,18 @@ Regenerate or check them with `python3 make_vintages.py [--verify]`.
   Weighting the blend by people rather than GDP is a deliberate, **contestable**
   value choice consistent with §10; the member table, the formula, and the raw
   World Bank values are reproduced in the vintage's `SOURCES.md`.
+- **`v0.3-unwpp-2026-05-15` (REAL; supersedes v0.1).** The v0.1 formulas and
+  exactly v0.1's ECB FX inputs, with populations read from the UN Population
+  Division's own WPP 2024 file (`WPP2024_Demographic_Indicators_Medium.csv.gz`,
+  medium variant, `TPopulation1July` for 2026; CC BY 3.0 IGO) rather than from a
+  republication, and the euro area counted on its membership at the valuation
+  date (21 states; Bulgaria joined on 2026-01-01). `1 openunit = 0.985654 USD`.
+  The 26 rows used are committed as `data/sources/un_wpp2024_population_2026.csv`,
+  whose sha256 is part of the spec. v0.1 and v0.2 took the same UN figures from
+  Worldometer's republication; 23 of their 25 populations equal the UN file, and
+  Greece and Slovenia differ by one person each. v0.1 is not rewritten; the
+  correction is recorded in v0.3's hashed spec (`supersedes`) and in
+  `data/vintages.json` (`superseded_by`, warnings).
 
 ## 7. Anchoring
 

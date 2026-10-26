@@ -25,10 +25,12 @@ verify: guard
 	$(MAKE) verify-independent
 	$(PYTHON) openunit.py
 
-# Second-implementation check: every shipped vintage must pass the verifier
-# that never imports the engine (verify_independent.py).
+# Second-implementation check: every shipped vintage (each data/*/ directory
+# holding a spec.json; data/sources/ holds source extracts, not vintages) must
+# pass the verifier that never imports the engine (verify_independent.py).
 verify-independent:
-	@set -e; for d in data/*/; do \
+	@set -e; for s in data/*/spec.json; do \
+		d=$$(dirname "$$s"); \
 		$(PYTHON) verify_independent.py "$$d/spec.json" "$$d/artifact.json"; \
 	done
 

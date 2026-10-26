@@ -1,0 +1,155 @@
+{
+  "method": "openunit",
+  "method_version": "v0.3",
+  "numeraire": "USD",
+  "weight_vintage": {
+    "label": "UN-WPP-2024",
+    "basis": "population_share",
+    "frequency": "low (annual); value uses ECB daily reference FX",
+    "note": "SDR-style fixed basket, population version. Quantities are pinned from UN population shares read from the UN Population Division's own WPP 2024 file; value is read from ECB euro reference rates. Same method formulas and the same FX inputs as v0.1-2026-05-15."
+  },
+  "rounding": {
+    "precision": 50,
+    "mode": "ROUND_HALF_EVEN",
+    "display_dp": 6
+  },
+  "provenance": {
+    "population": {
+      "source": "United Nations, Department of Economic and Social Affairs, Population Division (2024). World Population Prospects 2024, Online Edition.",
+      "publisher": "United Nations, Department of Economic and Social Affairs, Population Division",
+      "file": "WPP2024_Demographic_Indicators_Medium.csv.gz",
+      "url": "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20%28Standard%29/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz",
+      "file_bytes": "16557272",
+      "file_sha256": "286ac36bb1415e2e1ade03acfef0a29f0e4c087e2f78e38c48f50c5df89082bc",
+      "server_last_modified": "Fri, 13 Dec 2024 19:11:17 GMT",
+      "retrieved": "2026-10-26",
+      "licence": "CC BY 3.0 IGO",
+      "licence_url": "http://creativecommons.org/licenses/by/3.0/igo/",
+      "copyright": "Copyright (c) 2024 by United Nations",
+      "variant": "Medium",
+      "field": "TPopulation1July (thousands of persons, total population on 1 July)",
+      "time": "2026",
+      "reference_date": "2026-07-01",
+      "reference_note": "WPP 2024 estimates run to 2023; 2026 values are medium-variant projections for 1 July 2026 (the same reference v0.1 used)",
+      "conversion": "population = TPopulation1July x 1000 (exact; every value has at most 3 decimals)",
+      "extract": "data/sources/un_wpp2024_population_2026.csv",
+      "extract_sha256": "cc41a3b2bc61eb17343532506380035487d2f599d5e255682751fb1c4e0a2160",
+      "changes": "26 rows selected (Time=2026, Medium; the basket economies and the euro-area members); thousands converted to persons; no other modification",
+      "interim_update": "The WPP 2024 interim update released on 19 January 2026 revises Togo only; none of the locations used here changed"
+    },
+    "euro_area": {
+      "definition": "sum of the 21 euro-area member states",
+      "as_of": "2026-05-15",
+      "members_iso3": [
+        "AUT",
+        "BEL",
+        "BGR",
+        "CYP",
+        "DEU",
+        "ESP",
+        "EST",
+        "FIN",
+        "FRA",
+        "GRC",
+        "HRV",
+        "IRL",
+        "ITA",
+        "LTU",
+        "LUX",
+        "LVA",
+        "MLT",
+        "NLD",
+        "PRT",
+        "SVK",
+        "SVN"
+      ],
+      "source": "https://www.ecb.europa.eu/euro/intro/html/index.en.html",
+      "accession_note": "Bulgaria joined the euro area on 2026-01-01 at the irrevocably fixed rate BGN 1.95583 = EUR 1 (https://www.ecb.europa.eu/euro/changeover/bulgaria/html/index.en.html). Both FX dates fall after accession, so Bulgaria's population is valued at the EUR rate on both legs."
+    },
+    "fx": {
+      "source": "European Central Bank, euro foreign exchange reference rates (units of currency per 1 EUR)",
+      "baseline_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml",
+      "valuation_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+      "baseline_date": "2026-01-09",
+      "valuation_date": "2026-05-15",
+      "conversion": "usd_per_unit(C) = (USD per EUR) / (C per EUR); USD=1; EUR=(USD per EUR)",
+      "same_as": "v0.1-2026-05-15"
+    }
+  },
+  "supersedes": [
+    {
+      "vintage": "v0.1-2026-05-15",
+      "artifact_hash": "sha256:1e615cf7cffe025667c98150cfb2010ed368bf838fe3b14fd460b05974839a3a",
+      "reasons": [
+        {
+          "code": "EURO_AREA_MEMBERSHIP",
+          "detail": "v0.1 counts 20 euro-area member states; Bulgaria joined the euro area on 2026-01-01, so on both FX dates (2026-01-09, 2026-05-15) it had 21 members"
+        },
+        {
+          "code": "POPULATION_VIA_REPUBLISHER",
+          "detail": "v0.1 took the UN WPP 2024 figures from Worldometer's republication; this vintage reads the UN Population Division's own file"
+        },
+        {
+          "code": "POPULATION_MISMATCH",
+          "detail": "2 of v0.1's 25 populations differ from the UN file: Greece 9897115 (v0.1) vs 9897116 (UN); Slovenia 2114573 (v0.1) vs 2114574 (UN)"
+        }
+      ]
+    }
+  ],
+  "basket": [
+    {
+      "code": "USD",
+      "name": "United States",
+      "population": "349035494",
+      "fx_baseline_usd_per_unit": "1",
+      "fx_valuation_usd_per_unit": "1",
+      "source_eur_per_unit_baseline": "1.1642",
+      "source_eur_per_unit_valuation": "1.1628"
+    },
+    {
+      "code": "EUR",
+      "name": "Euro area",
+      "population": "354408517",
+      "fx_baseline_usd_per_unit": "1.1642",
+      "fx_valuation_usd_per_unit": "1.1628",
+      "source_eur_per_unit_baseline": "1",
+      "source_eur_per_unit_valuation": "1"
+    },
+    {
+      "code": "CNY",
+      "name": "China",
+      "population": "1412914089",
+      "fx_baseline_usd_per_unit": "0.14321917134140340517665584096053538037594724928649",
+      "fx_valuation_usd_per_unit": "0.14682930525039775740586408061216758845367073263126",
+      "source_eur_per_unit_baseline": "8.1288",
+      "source_eur_per_unit_valuation": "7.9194"
+    },
+    {
+      "code": "JPY",
+      "name": "Japan",
+      "population": "122427731",
+      "fx_baseline_usd_per_unit": "0.0063437227550130775937227550130775937227550130775937",
+      "fx_valuation_usd_per_unit": "0.0063072249945758298980256020828813191581688001735734",
+      "source_eur_per_unit_baseline": "183.52",
+      "source_eur_per_unit_valuation": "184.36"
+    },
+    {
+      "code": "GBP",
+      "name": "United Kingdom",
+      "population": "69931528",
+      "fx_baseline_usd_per_unit": "1.3417079635818831393338711536245246052783220006915",
+      "fx_valuation_usd_per_unit": "1.3357840321654221711659965537047673750717978173464",
+      "source_eur_per_unit_baseline": "0.8677",
+      "source_eur_per_unit_valuation": "0.8705"
+    },
+    {
+      "code": "INR",
+      "name": "India",
+      "population": "1476625576",
+      "fx_baseline_usd_per_unit": "0.011084082697425107227694021431257646369967676979249",
+      "fx_valuation_usd_per_unit": "0.010419915049196193343728157427818699930103769019840",
+      "source_eur_per_unit_baseline": "105.0335",
+      "source_eur_per_unit_valuation": "111.594"
+    }
+  ]
+}

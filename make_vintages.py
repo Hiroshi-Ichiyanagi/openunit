@@ -23,10 +23,24 @@ NOTE on honesty:
     value, so the euro-area factor is a population-weighted blend of the 20
     euro-area members' WB values -- a contestable choice (SPEC.md section 10)
     documented in the vintage's SOURCES.md.
+  - v0.1 and v0.2 took the UN WPP 2024 populations from Worldometer's
+    republication. v0.3-unwpp reads them from the UN Population Division's own
+    file instead (a small extract is committed under data/sources/), uses the
+    euro area's membership on the valuation date (21 states: Bulgaria joined on
+    2026-01-01), and keeps v0.1's ECB FX inputs unchanged. v0.1/v0.2 are never
+    rewritten; v0.3-unwpp declares that it supersedes v0.1 (SPEC.md,
+    "Corrections and supersession").
+
+    python3 make_vintages.py --check-un-wpp RAW.csv.gz
+        re-extracts the committed UN population CSV from the raw UN file
+        (sha256-checked) and reports whether it is byte-identical.
 """
 
 import os
+import csv
+import gzip
 import json
+import hashlib
 import argparse
 from decimal import Decimal, localcontext, ROUND_HALF_EVEN
 
@@ -601,6 +615,557 @@ def sources_v0_2(spec, art):
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# v0.3-unwpp -- REAL: v0.1's method and ECB FX, with populations read from the
+#               UN Population Division's own WPP 2024 file (not a
+#               republication) and the euro area on its membership at the
+#               valuation date (21 states). Supersedes v0.1 (never rewritten).
+# ---------------------------------------------------------------------------
+
+# The raw UN file is kept OUTSIDE the repository; only the 26 rows openunit
+# needs are committed, verbatim plus a derived persons column, as
+# UN_EXTRACT_REL. `--check-un-wpp RAW` re-derives that extract from the raw file.
+UN_WPP_RAW = {
+    "publisher": ("United Nations, Department of Economic and Social Affairs, "
+                  "Population Division"),
+    "citation": ("United Nations, Department of Economic and Social Affairs, "
+                 "Population Division (2024). World Population Prospects 2024, "
+                 "Online Edition."),
+    "file": "WPP2024_Demographic_Indicators_Medium.csv.gz",
+    "url": ("https://population.un.org/wpp/assets/Excel%20Files/"
+            "1_Indicator%20%28Standard%29/CSV_FILES/"
+            "WPP2024_Demographic_Indicators_Medium.csv.gz"),
+    "download_page": ("https://population.un.org/wpp/downloads?folder="
+                      "Standard%20Projections&group=CSV%20format"),
+    "bytes": "16557272",
+    "sha256": "286ac36bb1415e2e1ade03acfef0a29f0e4c087e2f78e38c48f50c5df89082bc",
+    "server_last_modified": "Fri, 13 Dec 2024 19:11:17 GMT",
+    "retrieved": "2026-10-26",
+    "licence": "CC BY 3.0 IGO",
+    "licence_url": "http://creativecommons.org/licenses/by/3.0/igo/",
+    "copyright": "Copyright (c) 2024 by United Nations",
+    "variant": "Medium",
+    "field": "TPopulation1July",
+    "field_unit": "thousands of persons, total population on 1 July",
+    "time": "2026",
+}
+UN_EXTRACT_REL = "data/sources/un_wpp2024_population_2026.csv"
+UN_EXTRACT_SHA256 = (
+    "cc41a3b2bc61eb17343532506380035487d2f599d5e255682751fb1c4e0a2160")
+UN_EXTRACT_HEADER = ["iso3", "un_loc_id", "location", "variant", "time",
+                     "tpopulation1july_thousands", "population_persons"]
+
+# Euro area on the valuation date 2026-05-15: 21 member states (ISO 3166-1
+# alpha-3, sorted). Source: ECB, "What is the euro?" member list,
+# https://www.ecb.europa.eu/euro/intro/html/index.en.html (read 2026-10-26).
+# Bulgaria joined on 2026-01-01 at the irrevocably fixed rate BGN 1.95583 =
+# EUR 1 (ECB, https://www.ecb.europa.eu/euro/changeover/bulgaria/html/
+# index.en.html). Both FX dates (2026-01-09, 2026-05-15) fall after accession.
+EURO_AREA_AS_OF = "2026-05-15"
+EURO_AREA_2026 = [
+    ("AUT", "Austria"), ("BEL", "Belgium"), ("BGR", "Bulgaria"),
+    ("CYP", "Cyprus"), ("DEU", "Germany"), ("ESP", "Spain"),
+    ("EST", "Estonia"), ("FIN", "Finland"), ("FRA", "France"),
+    ("GRC", "Greece"), ("HRV", "Croatia"), ("IRL", "Ireland"),
+    ("ITA", "Italy"), ("LTU", "Lithuania"), ("LUX", "Luxembourg"),
+    ("LVA", "Latvia"), ("MLT", "Malta"), ("NLD", "Netherlands"),
+    ("PRT", "Portugal"), ("SVK", "Slovakia"), ("SVN", "Slovenia"),
+]
+BULGARIA_JOINED = "2026-01-01"
+BGN_PER_EUR_FIXED = "1.95583"
+
+ISO3_FOR_CCY = {"USD": "USA", "CNY": "CHN", "JPY": "JPN", "GBP": "GBR",
+                "INR": "IND"}
+# v0.1's member names (as transcribed from Worldometer) -> ISO3; used only to
+# compare v0.1 with the UN file.
+V0_1_MEMBER_ISO3 = {
+    "Germany": "DEU", "France": "FRA", "Italy": "ITA", "Spain": "ESP",
+    "Netherlands": "NLD", "Belgium": "BEL", "Greece": "GRC",
+    "Portugal": "PRT", "Austria": "AUT", "Ireland": "IRL", "Croatia": "HRV",
+    "Lithuania": "LTU", "Slovenia": "SVN", "Latvia": "LVA", "Estonia": "EST",
+    "Cyprus": "CYP", "Luxembourg": "LUX", "Malta": "MLT", "Slovakia": "SVK",
+    "Finland": "FIN",
+}
+V0_1_POP_KEY = {"USD": "USA", "CNY": "CHN", "JPY": "JPN", "GBP": "GBR",
+                "INR": "IND"}
+
+V0_3_ID = "v0.3-unwpp-%s" % ECB["valuation"]["date"]
+
+
+def un_thousands_to_persons(thousands):
+    """UN WPP publishes population in thousands with up to 3 decimals, i.e. to
+    the person. Convert exactly; refuse anything that is not a whole number of
+    persons (that would mean the source format changed)."""
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        v = Decimal(thousands) * 1000
+        if v < 0 or v != v.to_integral_value():
+            raise ValueError("not a whole number of persons: %r" % thousands)
+        return str(int(v))
+
+
+def un_extract_text(rows_by_iso3):
+    """Render the committed extract CSV (LF line endings, ISO3-sorted)."""
+    lines = [",".join(UN_EXTRACT_HEADER)]
+    for iso in sorted(rows_by_iso3):
+        r = rows_by_iso3[iso]
+        fields = [iso, r["un_loc_id"], r["location"], r["variant"], r["time"],
+                  r["tpopulation1july_thousands"],
+                  un_thousands_to_persons(r["tpopulation1july_thousands"])]
+        for f in fields:
+            if "," in f or '"' in f or "\n" in f:
+                raise ValueError("unexpected CSV metacharacter in %r" % f)
+        lines.append(",".join(fields))
+    return "\n".join(lines) + "\n"
+
+
+def load_un_extract(path=None):
+    """Load and integrity-check the committed UN WPP 2024 extract."""
+    path = path or os.path.join(HERE, UN_EXTRACT_REL)
+    with open(path, "rb") as fh:
+        raw = fh.read()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != UN_EXTRACT_SHA256:
+        raise ValueError("%s sha256 %s != pinned %s"
+                         % (UN_EXTRACT_REL, digest, UN_EXTRACT_SHA256))
+    rows = list(csv.reader(raw.decode("utf-8").split("\n")[:-1]))
+    if rows[0] != UN_EXTRACT_HEADER:
+        raise ValueError("unexpected extract header: %r" % rows[0])
+    out = {}
+    for r in rows[1:]:
+        rec = dict(zip(UN_EXTRACT_HEADER, r))
+        if rec["variant"] != UN_WPP_RAW["variant"] or \
+                rec["time"] != UN_WPP_RAW["time"]:
+            raise ValueError("unexpected variant/time in %r" % rec)
+        if un_thousands_to_persons(rec["tpopulation1july_thousands"]) != \
+                rec["population_persons"]:
+            raise ValueError("derived persons column mismatch in %r" % rec)
+        if rec["iso3"] in out:
+            raise ValueError("duplicate row for %s" % rec["iso3"])
+        out[rec["iso3"]] = rec
+    if un_extract_text(out).encode("utf-8") != raw:
+        raise ValueError("extract is not in canonical form")
+    return out
+
+
+def extract_from_un_raw(raw_path):
+    """Re-derive the extract rows from the raw UN file (sha256-checked)."""
+    h = hashlib.sha256()
+    with open(raw_path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    if h.hexdigest() != UN_WPP_RAW["sha256"]:
+        raise ValueError("raw UN file sha256 %s != pinned %s"
+                         % (h.hexdigest(), UN_WPP_RAW["sha256"]))
+    want = set(ISO3_FOR_CCY.values()) | {iso for iso, _ in EURO_AREA_2026}
+    found = {}
+    with gzip.open(raw_path, "rt", encoding="utf-8-sig", newline="") as fh:
+        for row in csv.DictReader(fh):
+            if row["ISO3_code"] in want and row["Time"] == UN_WPP_RAW["time"] \
+                    and row["Variant"] == UN_WPP_RAW["variant"]:
+                if row["ISO3_code"] in found:
+                    raise ValueError("duplicate raw row for %s" % row["ISO3_code"])
+                found[row["ISO3_code"]] = {
+                    "un_loc_id": row["LocID"], "location": row["Location"],
+                    "variant": row["Variant"], "time": row["Time"],
+                    "tpopulation1july_thousands": row[UN_WPP_RAW["field"]],
+                }
+    missing = sorted(want - set(found))
+    if missing:
+        raise ValueError("raw UN file lacks rows for %s" % missing)
+    return found
+
+
+def v0_3_inputs():
+    """Populations for the v0.3-unwpp basket, from the UN extract."""
+    un = load_un_extract()
+    pop_for = {c: un[iso]["population_persons"]
+               for c, iso in ISO3_FOR_CCY.items()}
+    members = [(iso, name, un[iso]["population_persons"])
+               for iso, name in EURO_AREA_2026]
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        ea = sum((Decimal(p) for _, _, p in members), Decimal(0))
+    pop_for["EUR"] = str(ea)
+    return un, pop_for, members, ea
+
+
+def v0_1_vs_un(un):
+    """Every v0.1 population compared with the UN file: (label, iso3, v0.1, UN)."""
+    rows = []
+    for c in BASKET:
+        if c == "EUR":
+            continue
+        iso = ISO3_FOR_CCY[c]
+        rows.append((CCY_NAME[c], iso, POP[V0_1_POP_KEY[c]],
+                     un[iso]["population_persons"]))
+    for name, p in EURO_AREA_MEMBERS:
+        iso = V0_1_MEMBER_ISO3[name]
+        rows.append((name, iso, p, un[iso]["population_persons"]))
+    return rows
+
+
+def nominal_fx_artifact(pop_for, method_version="v0.3"):
+    """Artifact for a basket with the given populations and v0.1's ECB FX.
+    Used for the v0.3 build and for the comparison/decomposition tables."""
+    basket = []
+    for c in BASKET:
+        basket.append({
+            "code": c, "name": CCY_NAME[c], "population": pop_for[c],
+            "fx_baseline_usd_per_unit": str(usd_per_unit(c, "baseline")),
+            "fx_valuation_usd_per_unit": str(usd_per_unit(c, "valuation")),
+        })
+    spec = {
+        "method": "openunit", "method_version": method_version,
+        "numeraire": "USD",
+        "weight_vintage": {"label": "comparison", "basis": "population_share"},
+        "basket": basket,
+    }
+    return openunit.build_artifact(spec)
+
+
+def build_v0_3_unwpp(persist=True):
+    un, pop_for, members, ea = v0_3_inputs()
+    v01_vid, _v01_spec, v01_art, _ = build_v0_1(persist=False)
+
+    mismatches = [(label, iso, old, new) for label, iso, old, new
+                  in v0_1_vs_un(un) if old != new]
+    v01_isos = set(V0_1_MEMBER_ISO3.values())
+    added = [(iso, name, p) for iso, name, p in members if iso not in v01_isos]
+
+    basket = []
+    for c in BASKET:
+        basket.append({
+            "code": c,
+            "name": CCY_NAME[c],
+            "population": pop_for[c],
+            "fx_baseline_usd_per_unit": str(usd_per_unit(c, "baseline")),
+            "fx_valuation_usd_per_unit": str(usd_per_unit(c, "valuation")),
+            "source_eur_per_unit_baseline":
+                ECB["baseline"]["per_eur"].get(c, "1"),
+            "source_eur_per_unit_valuation":
+                ECB["valuation"]["per_eur"].get(c, "1"),
+        })
+
+    reasons = [{
+        "code": "EURO_AREA_MEMBERSHIP",
+        "detail": ("v0.1 counts 20 euro-area member states; %s joined the euro "
+                   "area on %s, so on both FX dates (%s, %s) it had %d members"
+                   % (", ".join(n for _, n, _ in added), BULGARIA_JOINED,
+                      ECB["baseline"]["date"], ECB["valuation"]["date"],
+                      len(EURO_AREA_2026))),
+    }, {
+        "code": "POPULATION_VIA_REPUBLISHER",
+        "detail": ("v0.1 took the UN WPP 2024 figures from Worldometer's "
+                   "republication; this vintage reads the UN Population "
+                   "Division's own file"),
+    }]
+    if mismatches:
+        reasons.append({
+            "code": "POPULATION_MISMATCH",
+            "detail": ("%d of v0.1's %d populations differ from the UN file: %s"
+                       % (len(mismatches), len(v0_1_vs_un(un)),
+                          "; ".join("%s %s (v0.1) vs %s (UN)"
+                                    % (label, old, new)
+                                    for label, _iso, old, new in mismatches))),
+        })
+
+    fx_prov = {
+        "source": "European Central Bank, euro foreign exchange "
+                  "reference rates (units of currency per 1 EUR)",
+        "baseline_url": "https://www.ecb.europa.eu/stats/eurofxref/"
+                        "eurofxref-hist-90d.xml",
+        "valuation_url": "https://www.ecb.europa.eu/stats/eurofxref/"
+                         "eurofxref-daily.xml",
+        "baseline_date": ECB["baseline"]["date"],
+        "valuation_date": ECB["valuation"]["date"],
+        "conversion": "usd_per_unit(C) = (USD per EUR) / (C per EUR); "
+                      "USD=1; EUR=(USD per EUR)",
+        "same_as": v01_vid,
+    }
+
+    spec = {
+        "method": "openunit",
+        "method_version": "v0.3",
+        "numeraire": "USD",
+        "weight_vintage": {
+            "label": "UN-WPP-2024",
+            "basis": "population_share",
+            "frequency": "low (annual); value uses ECB daily reference FX",
+            "note": ("SDR-style fixed basket, population version. Quantities "
+                     "are pinned from UN population shares read from the UN "
+                     "Population Division's own WPP 2024 file; value is read "
+                     "from ECB euro reference rates. Same method formulas and "
+                     "the same FX inputs as %s." % v01_vid),
+        },
+        "rounding": {"precision": PREC, "mode": "ROUND_HALF_EVEN", "display_dp": 6},
+        "provenance": {
+            "population": {
+                "source": UN_WPP_RAW["citation"],
+                "publisher": UN_WPP_RAW["publisher"],
+                "file": UN_WPP_RAW["file"],
+                "url": UN_WPP_RAW["url"],
+                "file_bytes": UN_WPP_RAW["bytes"],
+                "file_sha256": UN_WPP_RAW["sha256"],
+                "server_last_modified": UN_WPP_RAW["server_last_modified"],
+                "retrieved": UN_WPP_RAW["retrieved"],
+                "licence": UN_WPP_RAW["licence"],
+                "licence_url": UN_WPP_RAW["licence_url"],
+                "copyright": UN_WPP_RAW["copyright"],
+                "variant": UN_WPP_RAW["variant"],
+                "field": "%s (%s)" % (UN_WPP_RAW["field"],
+                                      UN_WPP_RAW["field_unit"]),
+                "time": UN_WPP_RAW["time"],
+                "reference_date": "2026-07-01",
+                "reference_note": ("WPP 2024 estimates run to 2023; 2026 values "
+                                   "are medium-variant projections for 1 July "
+                                   "2026 (the same reference v0.1 used)"),
+                "conversion": "population = TPopulation1July x 1000 (exact; "
+                              "every value has at most 3 decimals)",
+                "extract": UN_EXTRACT_REL,
+                "extract_sha256": UN_EXTRACT_SHA256,
+                "changes": ("%d rows selected (Time=2026, Medium; the basket "
+                            "economies and the euro-area members); thousands "
+                            "converted to persons; no other modification"
+                            % len(un)),
+                "interim_update": ("The WPP 2024 interim update released on "
+                                   "19 January 2026 revises Togo only; none of "
+                                   "the locations used here changed"),
+            },
+            "euro_area": {
+                "definition": "sum of the %d euro-area member states"
+                              % len(EURO_AREA_2026),
+                "as_of": EURO_AREA_AS_OF,
+                "members_iso3": [iso for iso, _ in EURO_AREA_2026],
+                "source": "https://www.ecb.europa.eu/euro/intro/html/"
+                          "index.en.html",
+                "accession_note": (
+                    "Bulgaria joined the euro area on %s at the irrevocably "
+                    "fixed rate BGN %s = EUR 1 (https://www.ecb.europa.eu/euro/"
+                    "changeover/bulgaria/html/index.en.html). Both FX dates "
+                    "fall after accession, so Bulgaria's population is valued "
+                    "at the EUR rate on both legs."
+                    % (BULGARIA_JOINED, BGN_PER_EUR_FIXED)),
+            },
+            "fx": fx_prov,
+        },
+        "supersedes": [{
+            "vintage": v01_vid,
+            "artifact_hash": v01_art["artifact_hash"],
+            "reasons": reasons,
+        }],
+        "basket": basket,
+    }
+    art = openunit.build_artifact(spec)
+    assert openunit.verify_artifact(art, spec), "v0.3 failed self-verification"
+
+    sources = sources_v0_3(spec, art, un, members, ea, v01_art, mismatches,
+                           added)
+    if persist:
+        d = os.path.join(DATA, V0_3_ID)
+        write(os.path.join(d, "spec.json"), dump_json(spec))
+        write(os.path.join(d, "artifact.json"), dump_json(art))
+        write(os.path.join(d, "SOURCES.md"), sources)
+    return V0_3_ID, spec, art, sources
+
+
+def _pct(x):
+    """Decimal share -> percentage string with 4 decimals (display only)."""
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        return str((Decimal(x) * 100).quantize(Decimal("0.0001")))
+
+
+def sources_v0_3(spec, art, un, members, ea, v01_art, mismatches, added):
+    q6 = Decimal("0.000001")
+    lines = []
+    lines.append("# openunit vintage `%s` -- sources & provenance\n" % V0_3_ID)
+    lines.append("**Status: REAL DATA.** Population is read from the UN "
+                 "Population Division's own *World Population Prospects 2024* "
+                 "file (not a republication); FX is the same ECB data as "
+                 "`%s`. Re-running `make_vintages.py` reproduces `spec.json` "
+                 "and `artifact.json` byte for byte.\n" % spec["supersedes"][0]["vintage"])
+    lines.append("- `input_digest`  : `%s`" % art["input_digest"])
+    lines.append("- `artifact_hash` : `%s`" % art["artifact_hash"])
+    lines.append("- **1 openunit = %s USD**\n" % Decimal(art["value_usd"]).quantize(q6))
+
+    sup = spec["supersedes"][0]
+    lines.append("## Supersedes `%s`\n" % sup["vintage"])
+    lines.append("This vintage is a correction of `%s` (`artifact_hash` `%s`). "
+                 "That vintage is **not rewritten**: its files and hashes stay "
+                 "exactly as published and it still verifies -- verification "
+                 "proves reproduction, not correctness. The link is recorded in "
+                 "this vintage's `spec.json` (`supersedes`, hashed) and in "
+                 "`data/vintages.json`. Reasons:\n" % (sup["vintage"],
+                                                      sup["artifact_hash"]))
+    for r in sup["reasons"]:
+        lines.append("- `%s` -- %s." % (r["code"], r["detail"]))
+    lines.append("")
+
+    lines.append("## Population (UN World Population Prospects 2024, primary file)\n")
+    p = spec["provenance"]["population"]
+    lines.append("| field | value |")
+    lines.append("|---|---|")
+    for k in ("source", "file", "url", "file_bytes", "file_sha256",
+              "server_last_modified", "retrieved", "licence", "variant",
+              "field", "time", "reference_date", "extract", "extract_sha256"):
+        v = p[k]
+        if k in ("url",):
+            v = "<%s>" % v
+        elif k in ("file", "file_sha256", "extract", "extract_sha256"):
+            v = "`%s`" % v
+        lines.append("| %s | %s |" % (k, v))
+    lines.append("")
+    lines.append("- Licence: %s (%s), <%s>. Attribution: *%s* Changes made by "
+                 "openunit: %s. The raw file is **not** redistributed here; "
+                 "only the extract `%s` is." % (
+                     p["licence"], p["copyright"], p["licence_url"],
+                     p["source"], p["changes"], p["extract"]))
+    lines.append("- %s." % p["reference_note"])
+    lines.append("- %s." % p["interim_update"])
+    lines.append("- Download page: <%s>. The UN data-portal API was not used "
+                 "(it answered HTTP 401 without an account token).\n"
+                 % UN_WPP_RAW["download_page"])
+
+    lines.append("| economy | UN location | population |")
+    lines.append("|---|---|---|")
+    for c in BASKET:
+        e = next(x for x in spec["basket"] if x["code"] == c)
+        if c == "EUR":
+            loc = "sum of %d members (below)" % len(members)
+        else:
+            loc = "%s (%s)" % (un[ISO3_FOR_CCY[c]]["location"], ISO3_FOR_CCY[c])
+        lines.append("| %s (%s) | %s | %s |" % (CCY_NAME[c], c, loc,
+                                                e["population"]))
+    lines.append("")
+
+    lines.append("### Euro area = sum of %d member states (as of %s)\n"
+                 % (len(members), EURO_AREA_AS_OF))
+    lines.append("Membership source: ECB, <%s> (read %s). %s\n" % (
+        spec["provenance"]["euro_area"]["source"], UN_WPP_RAW["retrieved"],
+        spec["provenance"]["euro_area"]["accession_note"]))
+    lines.append("| member | ISO3 | UN `TPopulation1July` (thousands) | population |")
+    lines.append("|---|---|---|---|")
+    for iso, name, pop in members:
+        lines.append("| %s | %s | %s | %s |" % (
+            name, iso, un[iso]["tpopulation1july_thousands"], pop))
+    lines.append("| **euro area total** | | | **%s** |" % ea)
+    lines.append("")
+
+    lines.append("## Foreign exchange (ECB euro reference rates; same as `%s`)\n"
+                 % sup["vintage"])
+    lines.append("| currency | per EUR @ %s | per EUR @ %s |" % (
+        ECB["baseline"]["date"], ECB["valuation"]["date"]))
+    lines.append("|---|---|---|")
+    lines.append("| EUR | 1 (base) | 1 (base) |")
+    for c in ["USD", "JPY", "GBP", "CNY", "INR"]:
+        lines.append("| %s | %s | %s |" % (
+            c, ECB["baseline"]["per_eur"][c], ECB["valuation"]["per_eur"][c]))
+    lines.append("")
+    lines.append("- baseline: %s" % spec["provenance"]["fx"]["baseline_url"])
+    lines.append("- valuation: %s" % spec["provenance"]["fx"]["valuation_url"])
+    lines.append("- conversion: `usd_per_unit(C) = (USD per EUR) / (C per EUR)`, "
+                 "with `USD=1` and `EUR=(USD per EUR)`.\n")
+
+    lines.append("## Did v0.1's Worldometer numbers match the UN file?\n")
+    total = len(v0_1_vs_un(un))
+    lines.append("**%d of %d matched exactly; %d did not.** Each v0.1 population "
+                 "(5 economies + 20 euro-area members, transcribed from "
+                 "Worldometer) was compared with `TPopulation1July x 1000` in the "
+                 "UN file:\n" % (total - len(mismatches), total, len(mismatches)))
+    lines.append("| economy | v0.1 (Worldometer) | UN file | difference |")
+    lines.append("|---|---|---|---|")
+    for label, _iso, old, new in mismatches:
+        lines.append("| %s | %s | %s | %+d |" % (label, old, new,
+                                                 int(new) - int(old)))
+    lines.append("")
+    lines.append("The cause of the 1-person differences is not established from "
+                 "the UN file alone (for Greece, the file's male + female "
+                 "columns sum to 9897.115 thousand while its total column says "
+                 "9897.116; for Slovenia both say 2114.574). Separately, v0.1 "
+                 "omits %s (%s persons), a euro-area member on both of its FX "
+                 "dates.\n" % (", ".join(n for _, n, _ in added),
+                               ", ".join(p for _, _, p in added)))
+
+    lines.append("## Difference from `%s`\n" % sup["vintage"])
+    un20 = dict((c, un[iso]["population_persons"])
+                for c, iso in ISO3_FOR_CCY.items())
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        un20["EUR"] = str(sum((Decimal(un[V0_1_MEMBER_ISO3[n]]["population_persons"])
+                               for n, _ in EURO_AREA_MEMBERS), Decimal(0)))
+    art20 = nominal_fx_artifact(un20)
+    v_old = Decimal(v01_art["value_usd"])
+    v_20 = Decimal(art20["value_usd"])
+    v_new = Decimal(art["value_usd"])
+    lines.append("| step | euro-area members | 1 openunit (USD) | change vs v0.1 |")
+    lines.append("|---|---|---|---|")
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        for label, n, v in (("v0.1 as published (Worldometer)", 20, v_old),
+                            ("UN file, v0.1's 20 members (not shipped)", 20, v_20),
+                            ("**UN file, 21 members (this vintage)**",
+                             len(members), v_new)):
+            lines.append("| %s | %d | %s | %s%% |" % (
+                label, n, v.quantize(Decimal("0.000000001")),
+                ((v - v_old) / v_old * 100).quantize(Decimal("0.0001"))))
+    lines.append("")
+    lines.append("Weights, in per cent (population share = realized weight at "
+                 "the pin; realized weight at the 2026-05-15 valuation):\n")
+    lines.append("| code | v0.1 share | v0.3 share | v0.1 at valuation | "
+                 "v0.3 at valuation |")
+    lines.append("|---|---|---|---|---|")
+    for r_old, r_new in zip(v01_art["basket"], art["basket"]):
+        lines.append("| %s | %s | %s | %s | %s |" % (
+            r_new["code"], _pct(r_old["population_share"]),
+            _pct(r_new["population_share"]),
+            _pct(r_old["realized_weight_at_valuation"]),
+            _pct(r_new["realized_weight_at_valuation"])))
+    lines.append("")
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        ctx.rounding = ROUND
+        d_src = (v_20 - v_old) / v_old * 100
+        d_bgr = (v_new - v_20) / v_20 * 100
+    lines.append("The source change alone (same 20 members; Greece and Slovenia "
+                 "+1 person each) moves 1 openunit by %s%%. Adding Bulgaria "
+                 "moves it by a further %s%%: the euro area's population share "
+                 "rises and every other share falls in proportion. At the pin "
+                 "the shares are exactly the population shares; at valuation "
+                 "they drift with the ECB rates exactly as in v0.1.\n"
+                 % (format(d_src, ".3e"), format(d_bgr, ".3e")))
+
+    lines.append("## How to verify\n")
+    lines.append("```\npython3 make_vintages.py --verify\n"
+                 "python3 verify_independent.py data/%s/spec.json data/%s/artifact.json\n"
+                 "# optional, with the raw UN file downloaded from the URL above:\n"
+                 "python3 make_vintages.py --check-un-wpp %s\n```\n"
+                 % (V0_3_ID, V0_3_ID, UN_WPP_RAW["file"]))
+    lines.append("`--check-un-wpp` checks the raw file's sha256 and re-derives "
+                 "`%s` from it byte for byte.\n" % UN_EXTRACT_REL)
+    return "\n".join(lines)
+
+
+def check_un_wpp(raw_path):
+    """Re-derive the committed extract from the raw UN file; 0 iff identical."""
+    found = extract_from_un_raw(raw_path)
+    regen = un_extract_text(found).encode("utf-8")
+    with open(os.path.join(HERE, UN_EXTRACT_REL), "rb") as fh:
+        on_disk = fh.read()
+    if regen != on_disk:
+        print("FAIL  %s differs from the extract re-derived from %s"
+              % (UN_EXTRACT_REL, raw_path))
+        return 1
+    print("PASS  %s re-derived byte for byte from %s (sha256 %s)"
+          % (UN_EXTRACT_REL, os.path.basename(raw_path), UN_WPP_RAW["sha256"]))
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="make_vintages.py",
@@ -609,10 +1174,18 @@ def main(argv=None):
         "--verify", action="store_true",
         help="recompute every vintage in memory and compare it to the files "
              "under data/ WITHOUT writing; exit nonzero on any mismatch")
+    ap.add_argument(
+        "--check-un-wpp", metavar="RAW_CSV_GZ",
+        help="re-derive %s from the raw UN WPP 2024 file and compare; "
+             "writes nothing" % UN_EXTRACT_REL)
     args = ap.parse_args(argv)
 
+    if args.check_un_wpp:
+        return check_un_wpp(args.check_un_wpp)
+
     built = [build_v0_1(persist=not args.verify),
-             build_v0_2(persist=not args.verify)]
+             build_v0_2(persist=not args.verify),
+             build_v0_3_unwpp(persist=not args.verify)]
 
     if not args.verify:
         for vid, _spec, art, _src in built:

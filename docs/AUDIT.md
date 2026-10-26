@@ -176,3 +176,28 @@ already matched verbatim).
 After normalization, every transcription in `make_vintages.py` is **verbatim
 identical** to its official source string, so the "(= numerically)" caveats in
 §1 no longer apply to the shipped code.
+
+---
+
+## Addendum (2026-10-26): population re-checked against the UN's own file
+
+§2 above compared the transcribed populations with **Worldometer**, the
+republisher they were taken from, not with the United Nations. On 2026-10-26
+they were compared with the UN Population Division's own file
+(`WPP2024_Demographic_Indicators_Medium.csv.gz`, sha256 `286ac36b…82bc`,
+`TPopulation1July`, Time = 2026, medium variant):
+
+- **23 of 25 match exactly; 2 do not.** Greece `9897115` (transcribed) vs
+  `9897116` (UN) and Slovenia `2114573` vs `2114574` -- one person each.
+- **Euro-area membership.** §2 says the member list "matches the 20 official
+  euro-area states". That was wrong for these vintages' dates: Bulgaria joined
+  the euro area on 2026-01-01 (ECB), before both FX dates (2026-01-09 and
+  2026-05-15), so the euro area had 21 members. Bulgaria's 6667660 persons are
+  missing from v0.1 and v0.2.
+
+**Nothing published was rewritten.** v0.1 and v0.2 keep their files and hashes
+and still verify (verification proves reproduction, not correctness). The
+correction is a new vintage, `v0.3-unwpp-2026-05-15`, whose hashed spec
+declares that it supersedes v0.1; `data/vintages.json` records the link and
+the warnings, including the same membership warning for v0.2, for which no
+corrected PPP vintage has been issued yet.

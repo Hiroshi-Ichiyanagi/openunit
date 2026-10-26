@@ -5,6 +5,38 @@ All notable changes to openunit are documented here. The format follows
 specification plus a reference implementation; "versions" here refer to **method
 versions** (the `method_version` field) and to releases of this repository.
 
+## [Unreleased] — draft on branch `feat/v0.4-sources-fallbacks` (not published)
+
+### Added
+
+- **New vintage `v0.3-unwpp-2026-05-15`** (`artifact_hash`
+  `sha256:63812b17…c04f`, `1 openunit = 0.985654 USD`): v0.1's formulas and
+  exactly v0.1's ECB FX, with populations read from the UN Population
+  Division's own WPP 2024 file (`WPP2024_Demographic_Indicators_Medium.csv.gz`,
+  16557272 bytes, sha256 `286ac36b…82bc`, CC BY 3.0 IGO, retrieved 2026-10-26)
+  and the euro area on its 2026-05-15 membership (21 states; Bulgaria joined on
+  2026-01-01). It declares in its hashed spec that it **supersedes**
+  `v0.1-2026-05-15`.
+- `data/sources/un_wpp2024_population_2026.csv`: the 26 UN rows used (verbatim
+  plus a derived persons column), pinned by sha256; `make_vintages.py
+  --check-un-wpp RAW` re-derives it from the raw UN file byte for byte.
+- `data/vintages.json`: append-only registry of supersedes / superseded_by
+  links and machine-readable warnings (v0.1: superseded; v0.2: current with
+  warnings).
+- Tests: published v0.1/v0.2 files pinned by sha256 (never rewritten); v0.3
+  populations = UN extract; v0.3 FX = v0.1 FX; registry consistency.
+
+### Changed
+
+- `make verify-independent` and CI iterate over `data/*/spec.json`, so the
+  non-vintage `data/sources/` directory is skipped.
+
+### Found (no published file changed)
+
+- v0.1 and v0.2 count **20** euro-area members; on their FX dates the euro area
+  had **21** (Bulgaria from 2026-01-01). 23 of their 25 Worldometer-sourced
+  populations equal the UN file; Greece and Slovenia differ by one person.
+
 ## [0.3.0] — 2026-06-14
 
 ### Added

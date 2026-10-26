@@ -48,10 +48,11 @@ No third-party dependencies — Python **3.8+** standard library only.
 
 ## The reference vintages
 
-Two pinned vintages ship under `data/`. Each has a `spec.json` (the hashed
+Three pinned vintages ship under `data/`. Each has a `spec.json` (the hashed
 input), an `artifact.json` (the built, self-verifying result), and a
 `SOURCES.md` (full provenance: URLs, dates, raw numbers, and the exact
-conversion used).
+conversion used). `data/vintages.json` records which vintage supersedes which,
+with machine-readable warnings; published vintage files are never rewritten.
 
 ### `v0.1-2026-05-15` — **REAL DATA**
 
@@ -82,6 +83,21 @@ Bank `PA.NUS.PPP`** (ICP 2024) on the valuation leg, so the unit is read in
   lower-price economies: India moves from a 39.08 % headcount share to a
   64.48 % realized weight at PPP, while the United States falls from 9.24 % to
   3.24 %.
+
+### `v0.3-unwpp-2026-05-15` — **REAL DATA (UN primary file)** — supersedes v0.1
+
+Method v0.1's formulas (under the v0.3 input domain) and **exactly v0.1's ECB
+FX inputs**, with populations read from the UN Population Division's own
+*World Population Prospects 2024* file (medium variant, 1 July 2026) instead of
+a republication, and the euro area counted on its membership at the valuation
+date: **21 states** (Bulgaria joined on 2026-01-01). The 26 UN rows used are
+committed as `data/sources/un_wpp2024_population_2026.csv` (CC BY 3.0 IGO).
+
+- **1 openunit = 0.985654 USD** (v0.1: 0.985631; +0.0024 %, almost all of it
+  from adding Bulgaria)
+- `artifact_hash` `sha256:63812b17…c04f`
+- population-pinned weights: India 39.01 %, China 37.33 %, euro area 9.36 %,
+  United States 9.22 %, Japan 3.23 %, United Kingdom 1.85 %
 
 ## Command-line interface
 
@@ -170,6 +186,9 @@ sample_input.json           illustrative v0 spec (non-authoritative)
 data/
   v0.1-2026-05-15/          REAL vintage: spec.json, artifact.json, SOURCES.md
   v0.2-ppp-2026-05-15/      REAL PPP vintage: World Bank PA.NUS.PPP (ICP 2024)
+  v0.3-unwpp-2026-05-15/    REAL vintage: UN primary population file; supersedes v0.1
+  sources/                  committed source extracts (UN WPP 2024 rows) + SOURCES.md
+  vintages.json             registry: supersedes / superseded_by links, warnings
 test_determinism_guard.py   4 determinism invariants (standalone + pytest)
 test_vintages.py            backward-compat hash, pinned vintage hashes, FX integrity
 test_ppp.py                 PPP leg + population×multiplier weighting
