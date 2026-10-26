@@ -44,7 +44,7 @@
     },
     {
       "id": "v0.3-unwpp-2026-05-15",
-      "artifact_hash": "sha256:63812b17a3a73666fad42ab5e53418e4c376802f2c94b1ca0d306f269aabc04f",
+      "artifact_hash": "sha256:0fe13c839711bd60c3f87df59c84b47517bbaf4e8141d52dee5d86c42666b7af",
       "status": "current",
       "supersedes": [
         "v0.1-2026-05-15"

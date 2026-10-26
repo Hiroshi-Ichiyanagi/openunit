@@ -64,7 +64,7 @@
         "SVN"
       ],
       "source": "https://www.ecb.europa.eu/euro/intro/html/index.en.html",
-      "accession_note": "Bulgaria joined the euro area on 2026-01-01 at the irrevocably fixed rate BGN 1.95583 = EUR 1 (https://www.ecb.europa.eu/euro/changeover/bulgaria/html/index.en.html). Both FX dates fall after accession, so Bulgaria's population is valued at the EUR rate on both legs."
+      "accession_note": "Bulgaria joined the euro area on 2026-01-01 at the conversion rate BGN 1.95583 = EUR 1 (https://www.ecb.europa.eu/euro/changeover/bulgaria/html/index.en.html). Both FX dates fall after accession, so Bulgaria's population is valued at the EUR rate on both legs."
     },
     "fx": {
       "source": "European Central Bank, euro foreign exchange reference rates (units of currency per 1 EUR)",

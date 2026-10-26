@@ -95,7 +95,7 @@ committed as `data/sources/un_wpp2024_population_2026.csv` (CC BY 3.0 IGO).
 
 - **1 openunit = 0.985654 USD** (v0.1: 0.985631; +0.0024 %, almost all of it
   from adding Bulgaria)
-- `artifact_hash` `sha256:63812b17…c04f`
+- `artifact_hash` `sha256:0fe13c83…b7af`
 - population-pinned weights: India 39.01 %, China 37.33 %, euro area 9.36 %,
   United States 9.22 %, Japan 3.23 %, United Kingdom 1.85 %
 

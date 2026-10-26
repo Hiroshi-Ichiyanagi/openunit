@@ -35,7 +35,7 @@ VINTAGE_ARTIFACT_HASH = {
     "v0.2-ppp-2026-05-15":
         "sha256:566c95c1753dbcaa70bbfd58c295ced2117d4907d4d7aabb992d68a93f10b97a",
     "v0.3-unwpp-2026-05-15":
-        "sha256:63812b17a3a73666fad42ab5e53418e4c376802f2c94b1ca0d306f269aabc04f",
+        "sha256:0fe13c839711bd60c3f87df59c84b47517bbaf4e8141d52dee5d86c42666b7af",
 }
 
 # Published vintages are never rewritten (SPEC.md, "Corrections and

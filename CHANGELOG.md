@@ -10,7 +10,7 @@ versions** (the `method_version` field) and to releases of this repository.
 ### Added
 
 - **New vintage `v0.3-unwpp-2026-05-15`** (`artifact_hash`
-  `sha256:63812b17…c04f`, `1 openunit = 0.985654 USD`): v0.1's formulas and
+  `sha256:0fe13c83…b7af`, `1 openunit = 0.985654 USD`): v0.1's formulas and
   exactly v0.1's ECB FX, with populations read from the UN Population
   Division's own WPP 2024 file (`WPP2024_Demographic_Indicators_Medium.csv.gz`,
   16557272 bytes, sha256 `286ac36b…82bc`, CC BY 3.0 IGO, retrieved 2026-10-26)

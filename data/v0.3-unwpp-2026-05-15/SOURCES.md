@@ -2,8 +2,8 @@
 
 **Status: REAL DATA.** Population is read from the UN Population Division's own *World Population Prospects 2024* file (not a republication); FX is the same ECB data as `v0.1-2026-05-15`. Re-running `make_vintages.py` reproduces `spec.json` and `artifact.json` byte for byte.
 
-- `input_digest`  : `sha256:9c29dcf536eec7c81a629a5fc97af044d578d31909b0ba83817edf72866780ec`
-- `artifact_hash` : `sha256:63812b17a3a73666fad42ab5e53418e4c376802f2c94b1ca0d306f269aabc04f`
+- `input_digest`  : `sha256:81e868cac516acdbf8da9cb0258a89a248881c58991f0cc1618d04c0e654e005`
+- `artifact_hash` : `sha256:0fe13c839711bd60c3f87df59c84b47517bbaf4e8141d52dee5d86c42666b7af`
 - **1 openunit = 0.985654 USD**
 
 ## Supersedes `v0.1-2026-05-15`
@@ -49,7 +49,7 @@ This vintage is a correction of `v0.1-2026-05-15` (`artifact_hash` `sha256:1e615
 
 ### Euro area = sum of 21 member states (as of 2026-05-15)
 
-Membership source: ECB, <https://www.ecb.europa.eu/euro/intro/html/index.en.html> (read 2026-10-26). Bulgaria joined the euro area on 2026-01-01 at the irrevocably fixed rate BGN 1.95583 = EUR 1 (https://www.ecb.europa.eu/euro/changeover/bulgaria/html/index.en.html). Both FX dates fall after accession, so Bulgaria's population is valued at the EUR rate on both legs.
+Membership source: ECB, <https://www.ecb.europa.eu/euro/intro/html/index.en.html> (read 2026-10-26). Bulgaria joined the euro area on 2026-01-01 at the conversion rate BGN 1.95583 = EUR 1 (https://www.ecb.europa.eu/euro/changeover/bulgaria/html/index.en.html). Both FX dates fall after accession, so Bulgaria's population is valued at the EUR rate on both legs.
 
 | member | ISO3 | UN `TPopulation1July` (thousands) | population |
 |---|---|---|---|

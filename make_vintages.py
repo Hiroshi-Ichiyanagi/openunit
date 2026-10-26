@@ -656,10 +656,10 @@ UN_EXTRACT_HEADER = ["iso3", "un_loc_id", "location", "variant", "time",
                      "tpopulation1july_thousands", "population_persons"]
 
 # Euro area on the valuation date 2026-05-15: 21 member states (ISO 3166-1
-# alpha-3, sorted). Source: ECB, "What is the euro?" member list,
+# alpha-3, sorted). Source: the ECB's list of euro-area countries,
 # https://www.ecb.europa.eu/euro/intro/html/index.en.html (read 2026-10-26).
-# Bulgaria joined on 2026-01-01 at the irrevocably fixed rate BGN 1.95583 =
-# EUR 1 (ECB, https://www.ecb.europa.eu/euro/changeover/bulgaria/html/
+# Bulgaria joined on 2026-01-01 at the conversion rate BGN 1.95583 = EUR 1
+# (ECB, https://www.ecb.europa.eu/euro/changeover/bulgaria/html/
 # index.en.html). Both FX dates (2026-01-09, 2026-05-15) fall after accession.
 EURO_AREA_AS_OF = "2026-05-15"
 EURO_AREA_2026 = [
@@ -942,8 +942,8 @@ def build_v0_3_unwpp(persist=True):
                 "source": "https://www.ecb.europa.eu/euro/intro/html/"
                           "index.en.html",
                 "accession_note": (
-                    "Bulgaria joined the euro area on %s at the irrevocably "
-                    "fixed rate BGN %s = EUR 1 (https://www.ecb.europa.eu/euro/"
+                    "Bulgaria joined the euro area on %s at the conversion "
+                    "rate BGN %s = EUR 1 (https://www.ecb.europa.eu/euro/"
                     "changeover/bulgaria/html/index.en.html). Both FX dates "
                     "fall after accession, so Bulgaria's population is valued "
                     "at the EUR rate on both legs."
